@@ -42,9 +42,9 @@
 
         /* --- Modals --- */
         .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:4000; align-items:center; justify-content:center; }
-        .modal-content { background:white; padding:25px; border-radius:12px; width:90%; max-width:400px; }
-        .alert-box { text-align: center; border-top: 8px solid var(--alert); }
-        .alert-btn { background: var(--alert); color: white; padding: 12px 25px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+        .modal-content { background:white; padding:25px; border-radius:12px; width:90%; max-width:400px; max-height: 90vh; overflow-y: auto; }
+        .settings-section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .settings-section h4 { margin-bottom: 10px; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -52,16 +52,16 @@
 <div id="loginOverlay">
     <div class="login-box">
         <h2 style="margin-bottom:10px;">URBAN CASA</h2>
-        <input type="text" id="userIn" placeholder="Username">
+        <input type="text" id="userIn" placeholder="Username (admin)">
         <input type="password" id="passIn" placeholder="Password">
-        <button onclick="login()">Enter Floor</button>
+        <button onclick="handleLogin()">Enter Floor</button>
     </div>
 </div>
 
 <div class="container" id="mainApp">
     <header>
         <h2>Task Central</h2>
-        <button onclick="showModal(true)" style="padding:8px 12px; cursor:pointer; border-radius:5px; border:1px solid #ccc; font-weight:bold;">⚙️ Settings & Team</button>
+        <button onclick="showModal(true)" style="padding:8px 12px; cursor:pointer; border-radius:5px; border:1px solid #ccc; font-weight:bold;">⚙️ Settings</button>
     </header>
 
     <div class="tabs">
@@ -92,131 +92,117 @@
     <div class="task-board" id="taskBoard"></div>
 </div>
 
-<div class="modal" id="notificationModal">
-    <div class="modal-content alert-box">
-        <h1 style="font-size: 3em;">⏰</h1>
-        <h2>Update Required!</h2>
-        <p>Please update your progress and Post to the board.</p>
-        <button class="alert-btn" onclick="dismissAlert()">Got it</button>
-    </div>
-</div>
-
 <div class="modal" id="teamModal">
     <div class="modal-content">
-        <h3>Settings</h3>
-        <div style="margin: 15px 0;">
-            <strong>Reminder (Mins):</strong>
-            <input type="number" id="alertInterval" value="60" style="width: 60px; padding: 5px;">
-            <button onclick="updateTimer()" style="padding: 5px; background: var(--primary); color: white; border: none; border-radius: 4px;">Save</button>
+        <h3 style="margin-bottom:20px;">Control Panel</h3>
+        
+        <div class="settings-section">
+            <h4>🔑 Change Password</h4>
+            <input type="password" id="newPass" placeholder="New Password" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:6px;">
+            <button onclick="updatePassword()" style="width:100%; padding:10px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Update Password</button>
         </div>
-        <div id="teamList"></div>
-        <button onclick="showModal(false)" style="width:100%; margin-top:20px; padding:10px; background:#ccc; border:none; border-radius: 6px;">Close</button>
+
+        <div class="settings-section">
+            <h4>⏱️ Reminder Timer</h4>
+            <input type="number" id="alertInterval" value="60" style="width: 70px; padding: 8px; border:1px solid #ddd; border-radius:4px;"> <span>Mins</span>
+            <button onclick="updateTimer()" style="padding: 8px; background: var(--primary); color: white; border: none; border-radius: 4px; margin-left: 10px;">Set</button>
+        </div>
+
+        <div class="settings-section">
+            <h4>👥 Team Members</h4>
+            <div id="teamList" style="margin-bottom:10px;"></div>
+        </div>
+
+        <button onclick="showModal(false)" style="width:100%; padding:12px; background:#eee; border:none; border-radius: 6px; font-weight:bold;">Close Settings</button>
     </div>
 </div>
 
 <script>
-    // --- FIREBASE SETUP ---
-    const firebaseConfig = {
-        databaseURL: "https://task-76764-default-rtdb.firebaseio.com/"
-    };
+    const firebaseConfig = { databaseURL: "https://task-76764-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     let team = ["Sagar", "Suman"];
     let currentStatusFilter = 'all';
-    let reminderTimer;
+    let globalPass = "1234"; // Default fallback
 
-    function login() {
-        if(document.getElementById('userIn').value === 'admin' && document.getElementById('passIn').value === '1234') {
+    // Fetch password from Firebase on load
+    db.ref('credentials/adminPass').on('value', (snap) => {
+        if(snap.val()) globalPass = snap.val();
+    });
+
+    function handleLogin() {
+        const u = document.getElementById('userIn').value;
+        const p = document.getElementById('passIn').value;
+        if(u === 'admin' && p === globalPass) {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
-            startTimer(document.getElementById('alertInterval').value);
             renderUsers();
             syncFromFirebase();
-        } else { alert("Access Denied"); }
+        } else { alert("Wrong Credentials"); }
+    }
+
+    function updatePassword() {
+        const newP = document.getElementById('newPass').value;
+        if(newP.length < 4) {
+            alert("Password too short!");
+            return;
+        }
+        db.ref('credentials').update({ adminPass: newP }).then(() => {
+            alert("Password updated successfully!");
+            document.getElementById('newPass').value = '';
+        });
     }
 
     function syncFromFirebase() {
         db.ref('tasks').on('value', (snapshot) => {
             const data = snapshot.val();
-            render(data);
-        });
-    }
-
-    function render(data) {
-        const board = document.getElementById('taskBoard');
-        board.innerHTML = '';
-        if (!data) return;
-
-        Object.keys(data).forEach(id => {
-            const t = data[id];
-            if (currentStatusFilter !== 'all' && t.status !== currentStatusFilter) return;
-
-            const card = document.createElement('div');
-            card.className = `task-card card-${t.status}`;
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between;">
-                    <strong>${t.title}</strong>
-                    <button onclick="deleteTask('${id}')" style="border:none; background:none; cursor:pointer; color:#ccc;">✖</button>
-                </div>
-                <div style="font-size:0.8em; color:#666; margin:8px 0; background:#eee; display:inline-block; padding:3px 8px; border-radius:12px;">
-                    👤 ${t.assignee} | ⏰ Due: ${new Date(t.date).toLocaleString()}
-                </div>
-                <textarea id="note-${id}" class="task-notes" placeholder="Update notes...">${t.notes || ''}</textarea>
-                <select id="status-${id}" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ddd;">
-                    <option value="todo" ${t.status==='todo'?'selected':''}>📋 To Do</option>
-                    <option value="progress" ${t.status==='progress'?'selected':''}>⏳ In Progress</option>
-                    <option value="done" ${t.status==='done'?'selected':''}>✅ Completed</option>
-                </select>
-                <button class="post-update-btn" onclick="postTaskUpdate('${id}')">Post Update</button>
-            `;
-            board.appendChild(card);
+            const board = document.getElementById('taskBoard');
+            board.innerHTML = '';
+            if (!data) return;
+            Object.keys(data).forEach(id => {
+                const t = data[id];
+                if (currentStatusFilter !== 'all' && t.status !== currentStatusFilter) return;
+                const card = document.createElement('div');
+                card.className = `task-card card-${t.status}`;
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;"><strong>${t.title}</strong><button onclick="deleteTask('${id}')" style="border:none; background:none; cursor:pointer; color:#ccc;">✖</button></div>
+                    <div style="font-size:0.8em; color:#666; margin:8px 0; background:#eee; display:inline-block; padding:3px 8px; border-radius:12px;">👤 ${t.assignee} | ⏰ ${new Date(t.date).toLocaleString()}</div>
+                    <textarea id="note-${id}" class="task-notes">${t.notes || ''}</textarea>
+                    <select id="status-${id}" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ddd;">
+                        <option value="todo" ${t.status==='todo'?'selected':''}>📋 To Do</option>
+                        <option value="progress" ${t.status==='progress'?'selected':''}>⏳ In Progress</option>
+                        <option value="done" ${t.status==='done'?'selected':''}>✅ Completed</option>
+                    </select>
+                    <button class="post-update-btn" onclick="postTaskUpdate('${id}')">Post Update</button>
+                `;
+                board.appendChild(card);
+            });
         });
     }
 
     document.getElementById('taskForm').onsubmit = (e) => {
         e.preventDefault();
-        const newTask = {
+        db.ref('tasks').push({
             title: document.getElementById('tTitle').value,
             assignee: document.getElementById('tUser').value,
             date: document.getElementById('tDate').value,
-            status: 'todo',
-            notes: ''
-        };
-        db.ref('tasks').push(newTask);
+            status: 'todo', notes: ''
+        });
         e.target.reset();
     };
 
     function postTaskUpdate(id) {
-        const notes = document.getElementById(`note-${id}`).value;
-        const status = document.getElementById(`status-${id}`).value;
-        db.ref('tasks/' + id).update({ notes, status });
-        alert("Update Synced to Database!");
+        db.ref('tasks/' + id).update({
+            notes: document.getElementById(`note-${id}`).value,
+            status: document.getElementById(`status-${id}`).value
+        });
+        alert("Synced!");
     }
 
     function deleteTask(id) { if(confirm("Delete?")) db.ref('tasks/' + id).remove(); }
-
-    function setView(v) { 
-        currentStatusFilter = v; 
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(v)));
-        syncFromFirebase(); 
-    }
-
-    function renderUsers() {
-        const sel = document.getElementById('tUser');
-        sel.innerHTML = team.map(m => `<option value="${m}">${m}</option>`).join('');
-    }
-
-    function startTimer(mins) {
-        clearInterval(reminderTimer);
-        reminderTimer = setInterval(() => {
-            document.getElementById('notificationModal').style.display = 'flex';
-            if ("vibrate" in navigator) navigator.vibrate([400, 200, 400]);
-        }, mins * 60000);
-    }
-
-    function updateTimer() { startTimer(document.getElementById('alertInterval').value); alert("Timer Updated"); }
-    function dismissAlert() { document.getElementById('notificationModal').style.display = 'none'; }
+    function setView(v) { currentStatusFilter = v; syncFromFirebase(); }
+    function renderUsers() { document.getElementById('tUser').innerHTML = team.map(m => `<option value="${m}">${m}</option>`).join(''); }
     function showModal(s) { document.getElementById('teamModal').style.display = s ? 'flex' : 'none'; }
 </script>
 </body>
