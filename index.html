@@ -12,57 +12,57 @@
             --primary: #2c3e50; --accent: #3498db; --todo: #f1c40f;
             --progress: #3498db; --done: #2ecc71; --alert: #e74c3c; --bg: #f8f9fa;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg); color: #1a1a1a; }
 
-        /* --- UI Components --- */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; display: none; }
         header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .admin-only { display: none; }
 
-        /* --- Filter Bar --- */
-        .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; }
-        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #eee; background: white; cursor: pointer; font-size: 0.85em; font-weight: 600; }
+        /* Filter Section */
+        .filters-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .filter-group { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .filter-label { font-size: 10px; font-weight: 800; color: #999; text-transform: uppercase; margin-bottom: 2px; display: block; }
+        .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; background: white; cursor: pointer; font-size: 0.8em; font-weight: 600; white-space: nowrap; transition: 0.2s; }
         .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* --- Task Cards --- */
+        /* Task Cards */
         .task-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .task-card { background: white; border-radius: 12px; border-top: 6px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; transition: transform 0.2s; }
-        .task-card:hover { transform: translateY(-3px); }
+        .task-card { background: white; border-radius: 12px; border-top: 6px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; height: fit-content; }
         
-        /* Highlight Work */
         .work-content { padding: 18px; flex-grow: 1; }
-        .work-title { font-size: 1.25em; font-weight: 800; color: #111; text-transform: uppercase; margin-bottom: 8px; letter-spacing: -0.5px; }
-        .work-notes { font-size: 0.95em; color: #555; background: #fcfcfc; padding: 10px; border-radius: 8px; border-left: 3px solid #eee; min-height: 40px; }
+        .work-title { font-size: 1.2em; font-weight: 800; color: #111; text-transform: uppercase; margin-bottom: 8px; }
+        .work-notes { font-size: 0.9em; color: #555; background: #fcfcfc; padding: 10px; border-radius: 8px; border-left: 3px solid #eee; min-height: 30px; }
 
-        /* Tiny Meta Data */
-        .tiny-meta { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; padding: 5px 18px; border-top: 1px solid #f9f9f9; }
-        .tiny-meta b { color: #888; }
+        .tiny-meta { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; padding: 8px 18px; border-top: 1px solid #f9f9f9; }
+        .tiny-meta b { color: #777; }
 
-        /* Update Panel */
-        .update-panel { padding: 15px 18px; background: #fafafa; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
-        .update-input { width: 100%; padding: 8px; margin-bottom: 6px; border: 1px solid #eee; border-radius: 6px; font-size: 0.85em; }
-        .save-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.85em; }
+        .update-panel { padding: 15px 18px; background: #fafafa; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; border-top: 1px solid #f0f0f0; }
+        .update-input { width: 100%; padding: 8px; margin-bottom: 6px; border: 1px solid #eee; border-radius: 6px; font-size: 0.85em; outline: none; }
+        .save-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+        .save-btn:active { transform: scale(0.98); }
 
         .card-todo { border-top-color: var(--todo); }
         .card-progress { border-top-color: var(--progress); }
         .card-done { border-top-color: var(--done); opacity: 0.8; }
 
-        /* --- Login --- */
-        #loginOverlay { position: fixed; inset: 0; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        /* Login & Modal */
+        #loginOverlay { position: fixed; inset: 0; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; }
+        
         .login-box { background: white; padding: 30px; border-radius: 16px; width: 320px; text-align: center; }
-        .login-box input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #eee; border-radius: 8px; }
-        .login-box button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        input:focus, select:focus { border-color: var(--accent) !important; }
     </style>
 </head>
 <body>
 
 <div id="loginOverlay">
     <div class="login-box">
-        <h2 style="margin-bottom:15px;">URBAN CASA</h2>
-        <input type="text" id="userIn" placeholder="Username">
-        <input type="password" id="passIn" placeholder="Password">
-        <button onclick="handleLogin()">Sign In</button>
+        <h2 style="margin-bottom:15px; letter-spacing: 2px;">URBAN CASA</h2>
+        <input type="text" id="userIn" placeholder="Username" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+        <input type="password" id="passIn" placeholder="Password" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+        <button onclick="handleLogin()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Sign In</button>
     </div>
 </div>
 
@@ -70,28 +70,55 @@
     <header>
         <h3 id="welcomeMsg">Dashboard</h3>
         <div>
-            <button class="admin-only" onclick="toggleModal(true)" style="padding:8px 12px; border-radius:6px; border:1px solid #ddd; cursor:pointer;">Settings</button>
-            <button onclick="logout()" style="margin-left:10px; color:red; border:none; background:none; cursor:pointer; font-weight:bold;">Logout</button>
+            <button class="admin-only" onclick="toggleModal(true)" style="padding:8px 12px; border-radius:6px; border:1px solid #ddd; cursor:pointer; font-weight:600; background:white;">⚙️ Settings</button>
+            <button onclick="logout()" style="margin-left:10px; color:var(--alert); border:none; background:none; cursor:pointer; font-weight:bold;">Logout</button>
         </div>
     </header>
 
-    <div class="admin-only" style="background:white; padding:20px; border-radius:12px; margin-bottom:20px;">
+    <div class="admin-only" style="background:white; padding:20px; border-radius:12px; margin-bottom:20px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+        <p class="filter-label" style="margin-bottom:10px;">Create New Work Order</p>
         <form id="taskForm" style="display:flex; flex-wrap:wrap; gap:10px;">
-            <input type="text" id="tTitle" placeholder="Task Description" required style="flex:2; padding:10px; border:1px solid #ddd; border-radius:6px;">
-            <select id="tUser" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;"></select>
-            <input type="datetime-local" id="tDate" required style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;">
-            <button type="submit" style="padding:10px 20px; background:var(--primary); color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Assign</button>
+            <input type="text" id="tTitle" placeholder="What is the work?" required style="flex:2; padding:10px; border:1px solid #ddd; border-radius:6px; min-width:200px;">
+            <select id="tUser" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; min-width:120px;"></select>
+            <input type="datetime-local" id="tDate" required style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; min-width:150px;">
+            <button type="submit" style="padding:10px 20px; background:var(--primary); color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Assign Now</button>
         </form>
     </div>
 
-    <div class="filter-bar">
-        <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
-        <button class="filter-btn" onclick="setFilter('todo', this)">To Do</button>
-        <button class="filter-btn" onclick="setFilter('progress', this)">Progress</button>
-        <button class="filter-btn" onclick="setFilter('done', this)">Done</button>
+    <div class="filters-container">
+        <div>
+            <span class="filter-label">Work Status</span>
+            <div class="filter-group" id="statusFilterGroup">
+                <button class="filter-btn active" onclick="setFilter('status', 'all', this)">All Status</button>
+                <button class="filter-btn" onclick="setFilter('status', 'todo', this)">To Do</button>
+                <button class="filter-btn" onclick="setFilter('status', 'progress', this)">Progress</button>
+                <button class="filter-btn" onclick="setFilter('status', 'done', this)">Done</button>
+            </div>
+        </div>
+        <div>
+            <span class="filter-label">Team Member</span>
+            <div class="filter-group" id="teamFilterGroup"></div>
+        </div>
     </div>
 
     <div class="task-board" id="taskBoard"></div>
+</div>
+
+<div class="modal" id="adminModal">
+    <div class="modal-content">
+        <h3 style="margin-bottom:15px;">Admin Control</h3>
+        <div style="margin-bottom:15px; background:#f9f9f9; padding:15px; border-radius:10px;">
+            <p class="filter-label">Add Staff Member</p>
+            <div style="display:flex; gap:5px; margin-top:5px;">
+                <input type="text" id="newStaffName" placeholder="Name" style="width:50%; padding:8px; border:1px solid #ddd; border-radius:5px;">
+                <input type="password" id="newStaffPass" placeholder="Pass" style="width:50%; padding:8px; border:1px solid #ddd; border-radius:5px;">
+            </div>
+            <button onclick="addStaffMember()" style="width:100%; margin-top:10px; padding:10px; background:var(--done); color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Add to Team</button>
+        </div>
+        <p class="filter-label">Existing Team</p>
+        <div id="staffListUI" style="max-height: 120px; overflow-y: auto; font-size: 0.85em; margin-bottom:15px; border: 1px solid #eee; border-radius:8px; padding:5px;"></div>
+        <button onclick="toggleModal(false)" style="width:100%; padding:12px; background:#f0f0f0; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Close Settings</button>
+    </div>
 </div>
 
 <script>
@@ -101,12 +128,14 @@
 
     let currentUser = JSON.parse(localStorage.getItem('casa_session')) || null;
     let allUsers = {};
-    let currentFilter = 'all';
+    let activeFilters = { status: 'all', team: 'all' };
 
+    // Initialize User Data
     db.ref('users').on('value', snap => {
         allUsers = snap.val() || {};
         if (!allUsers.admin) db.ref('users/admin').set({ password: "1234", role: "admin" });
-        updateDropdown();
+        renderStaffList();
+        updateDropdowns();
     });
 
     if(currentUser) startApp();
@@ -118,7 +147,7 @@
             currentUser = { name: u, role: allUsers[u].role || 'staff' };
             localStorage.setItem('casa_session', JSON.stringify(currentUser));
             startApp();
-        } else { alert("Login failed"); }
+        } else { alert("Login failed: Username or Password incorrect."); }
     }
 
     function logout() { localStorage.removeItem('casa_session'); location.reload(); }
@@ -126,19 +155,22 @@
     function startApp() {
         document.getElementById('loginOverlay').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
-        document.getElementById('welcomeMsg').innerText = currentUser.name.toUpperCase();
+        document.getElementById('welcomeMsg').innerText = "Hello, " + currentUser.name.toUpperCase();
         if(currentUser.role === 'admin') document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
         syncTasks();
     }
 
-    function setFilter(status, btn) {
-        currentFilter = status;
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    function setFilter(type, value, btn) {
+        activeFilters[type] = value;
+        const group = type === 'status' ? 'statusFilterGroup' : 'teamFilterGroup';
+        document.querySelectorAll(`#${group} .filter-btn`).forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         syncTasks();
     }
 
     function syncTasks() {
+        // ERROR FIX: Use .off() to prevent multiple alert popups and data lag
+        db.ref('tasks').off(); 
         db.ref('tasks').on('value', snap => {
             const tasks = snap.val();
             const board = document.getElementById('taskBoard');
@@ -147,56 +179,92 @@
             
             Object.keys(tasks).reverse().forEach(id => {
                 const t = tasks[id];
-                if (currentFilter !== 'all' && t.status !== currentFilter) return;
-
-                const isOwner = (currentUser.name.toLowerCase() === t.assignee.toLowerCase() || currentUser.role === 'admin');
-                const card = document.createElement('div');
-                card.className = `task-card card-${t.status}`;
-                card.innerHTML = `
-                    <div class="work-content">
-                        <div class="work-title">${t.title}</div>
-                        <div class="work-notes">${t.notes || ''}</div>
-                    </div>
-                    
-                    <div class="tiny-meta">
-                        <span>👤 <b>${t.assignee}</b></span>
-                        <span>ST: <b>${t.status}</b></span>
-                        <span>⏰ <b>${new Date(t.date).toLocaleString([], {hour: '2-digit', minute:'2-digit', day:'numeric', month:'short'})}</b></span>
-                    </div>
-
-                    ${isOwner ? `
-                        <div class="update-panel">
-                            <input type="datetime-local" id="date-${id}" class="update-input" value="${t.date}">
-                            <textarea id="note-${id}" class="update-input" style="height:45px; resize:none;" placeholder="Notes">${t.notes || ''}</textarea>
-                            <select id="status-${id}" class="update-input">
-                                <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
-                                <option value="progress" ${t.status==='progress'?'selected':''}>Progress</option>
-                                <option value="done" ${t.status==='done'?'selected':''}>Done</option>
-                            </select>
-                            <button onclick="updateTask('${id}')" class="save-btn">UPDATE</button>
+                const statusMatch = activeFilters.status === 'all' || t.status === activeFilters.status;
+                const teamMatch = activeFilters.team === 'all' || t.assignee === activeFilters.team;
+                
+                if (statusMatch && teamMatch) {
+                    const isOwner = (currentUser.name.toLowerCase() === t.assignee.toLowerCase() || currentUser.role === 'admin');
+                    const card = document.createElement('div');
+                    card.className = `task-card card-${t.status}`;
+                    card.innerHTML = `
+                        <div class="work-content">
+                            <div class="work-title">${t.title}</div>
+                            <div class="work-notes">${t.notes || 'No work description notes yet.'}</div>
                         </div>
-                    ` : ''}
-                `;
-                board.appendChild(card);
+                        <div class="tiny-meta">
+                            <span>👤 <b>${t.assignee}</b></span>
+                            <span><b>${t.status}</b></span>
+                            <span>⏰ <b>${new Date(t.date).toLocaleString([], {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</b></span>
+                        </div>
+                        ${isOwner ? `
+                            <div class="update-panel">
+                                <label style="font-size:9px; font-weight:bold; color:#999;">UPDATE DATE & NOTES</label>
+                                <input type="datetime-local" id="date-${id}" class="update-input" value="${t.date}">
+                                <textarea id="note-${id}" class="update-input" style="height:45px; resize:none;" placeholder="Write updates here...">${t.notes || ''}</textarea>
+                                <select id="status-${id}" class="update-input">
+                                    <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
+                                    <option value="progress" ${t.status==='progress'?'selected':''}>Progress</option>
+                                    <option value="done" ${t.status==='done'?'selected':''}>Done</option>
+                                </select>
+                                <button onclick="updateTask('${id}')" class="save-btn">SAVE UPDATE</button>
+                                ${currentUser.role === 'admin' ? `<button onclick="deleteTask('${id}')" style="margin-top:10px; width:100%; background:none; border:none; color:#ddd; font-size:9px; cursor:pointer;">Delete Work Card</button>` : ''}
+                            </div>
+                        ` : ''}
+                    `;
+                    board.appendChild(card);
+                }
             });
         });
     }
 
     function updateTask(id) {
         const d = document.getElementById(`date-${id}`).value;
-        if(!d) return alert("Select Date");
+        if(!d) return alert("Error: Update Date cannot be blank.");
         db.ref('tasks/' + id).update({
-            date: d,
-            notes: document.getElementById(`note-${id}`).value,
-            status: document.getElementById(`status-${id}`).value
-        });
+            date: d, notes: document.getElementById(`note-${id}`).value, status: document.getElementById(`status-${id}`).value
+        }).then(() => alert("Work Updated Successfully!"));
     }
 
-    function updateDropdown() { document.getElementById('tUser').innerHTML = Object.keys(allUsers).map(u => `<option value="${u}">${u}</option>`).join(''); }
-    
+    function deleteTask(id) { if(confirm("Permanently delete this work card?")) db.ref('tasks/' + id).remove(); }
+    function toggleModal(show) { document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; }
+
+    function updateDropdowns() {
+        const names = Object.keys(allUsers);
+        document.getElementById('tUser').innerHTML = names.map(u => `<option value="${u}">${u}</option>`).join('');
+        
+        const teamFilterGroup = document.getElementById('teamFilterGroup');
+        const currentActive = activeFilters.team;
+        teamFilterGroup.innerHTML = `<button class="filter-btn ${currentActive === 'all' ? 'active' : ''}" onclick="setFilter('team', 'all', this)">All Team</button>` + 
+            names.map(u => `<button class="filter-btn ${currentActive === u ? 'active' : ''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`).join('');
+    }
+
+    function addStaffMember() {
+        const n = document.getElementById('newStaffName').value.toLowerCase().trim();
+        const p = document.getElementById('newStaffPass').value;
+        if(n && p) {
+            db.ref('users/' + n).set({ password: p, role: 'staff' });
+            document.getElementById('newStaffName').value = ''; document.getElementById('newStaffPass').value = '';
+            alert("Team member added!");
+        } else { alert("Please fill both name and password."); }
+    }
+
+    function renderStaffList() {
+        document.getElementById('staffListUI').innerHTML = Object.keys(allUsers).map(u => `
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:6px 0;">
+                <span>${u} (${allUsers[u].password})</span>
+                ${u !== 'admin' ? `<button onclick="db.ref('users/${u}').remove()" style="color:red; border:none; background:none; cursor:pointer;">Remove</button>` : ''}
+            </div>
+        `).join('');
+    }
+
     document.getElementById('taskForm').onsubmit = (e) => {
         e.preventDefault();
-        db.ref('tasks').push({ title: document.getElementById('tTitle').value, assignee: document.getElementById('tUser').value, date: document.getElementById('tDate').value, status: 'todo', notes: '' });
+        db.ref('tasks').push({ 
+            title: document.getElementById('tTitle').value, 
+            assignee: document.getElementById('tUser').value, 
+            date: document.getElementById('tDate').value, 
+            status: 'todo', notes: '' 
+        });
         e.target.reset();
     };
 </script>
