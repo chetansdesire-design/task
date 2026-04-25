@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URBAN CASA | Firebase Task Manager</title>
+    <title>URBAN CASA | Team Task Manager</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     
@@ -12,56 +12,80 @@
             --primary: #2c3e50; --accent: #3498db; --todo: #f1c40f;
             --progress: #3498db; --done: #2ecc71; --alert: #e74c3c; --bg: #f4f7f6;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--bg); color: #333; }
 
-        /* Login & UI */
+        /* --- Login --- */
         #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 3000; }
         .login-box { background: white; padding: 30px; border-radius: 12px; width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .login-box input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
         .login-box button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        /* --- Main UI --- */
         .container { max-width: 1100px; margin: 0 auto; padding: 20px; display: none; }
         header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
-        /* Task Cards */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { padding: 10px 20px; background: #e0e0e0; border: none; border-radius: 25px; cursor: pointer; white-space: nowrap; font-weight: 600; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        /* --- Task Board --- */
         .task-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .task-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 8px solid #ccc; transition: 0.3s; }
+        .task-card { background: white; padding: 20px; border-radius: 12px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 8px solid #ccc; }
         .card-todo { border-top-color: var(--todo); }
         .card-progress { border-top-color: var(--progress); }
-        .card-done { border-top-color: var(--done); }
+        .card-done { border-top-color: var(--done); opacity: 0.8; }
+        
         .task-notes { width: 100%; height: 60px; margin: 10px 0; border: 1px solid #f0f0f0; padding: 8px; border-radius: 6px; background: #fafafa; font-size: 0.9em; resize: none; }
-        .post-update-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .post-update-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
 
-        /* Alert */
+        /* --- Modals --- */
         .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:4000; align-items:center; justify-content:center; }
-        .modal-content { background:white; padding:25px; border-radius:12px; width:90%; max-width:400px; text-align: center; }
-        .alert-btn { background: var(--alert); color: white; padding: 12px 25px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
+        .modal-content { background:white; padding:25px; border-radius:12px; width:90%; max-width:400px; }
+        .alert-box { text-align: center; border-top: 8px solid var(--alert); }
+        .alert-btn { background: var(--alert); color: white; padding: 12px 25px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
     </style>
 </head>
 <body>
 
 <div id="loginOverlay">
     <div class="login-box">
-        <h2>URBAN CASA</h2>
-        <input type="password" id="passIn" placeholder="Enter Admin Pin (1234)">
-        <button onclick="login()">Sync & Enter</button>
+        <h2 style="margin-bottom:10px;">URBAN CASA</h2>
+        <input type="text" id="userIn" placeholder="Username">
+        <input type="password" id="passIn" placeholder="Password">
+        <button onclick="login()">Enter Floor</button>
     </div>
 </div>
 
 <div class="container" id="mainApp">
     <header>
-        <h2>Project Dashboard</h2>
-        <button onclick="triggerAlert()" style="padding: 8px 15px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer;">🔔 Signal Team</button>
+        <h2>Task Central</h2>
+        <button onclick="showModal(true)" style="padding:8px 12px; cursor:pointer; border-radius:5px; border:1px solid #ccc; font-weight:bold;">⚙️ Settings & Team</button>
     </header>
 
-    <div style="background:white; padding:20px; border-radius:12px; margin-bottom:20px;">
-        <form id="taskForm" style="display:flex; flex-wrap:wrap; gap:10px;">
-            <input type="text" id="tTitle" placeholder="Task Detail" required style="flex:2; padding:10px; border:1px solid #ddd; border-radius:6px;">
-            <select id="tUser" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;">
-                <option>Sagar</option><option>Suman</option>
-            </select>
-            <input type="datetime-local" id="tDate" required style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;">
-            <button type="submit" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">Assign</button>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="setView('all')">All Work</button>
+        <button class="tab-btn" onclick="setView('todo')">To Do</button>
+        <button class="tab-btn" onclick="setView('progress')">In Progress</button>
+        <button class="tab-btn" onclick="setView('done')">Completed</button>
+    </div>
+
+    <div style="background:white; padding:20px; border-radius:12px; margin-bottom:20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        <form id="taskForm" style="display:flex; flex-wrap:wrap; gap:10px; align-items: flex-end;">
+            <div style="flex:2; min-width: 200px;">
+                <label style="font-size: 0.8em; font-weight: bold;">Task Description</label>
+                <input type="text" id="tTitle" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="flex:1; min-width: 120px;">
+                <label style="font-size: 0.8em; font-weight: bold;">Assign To</label>
+                <select id="tUser" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"></select>
+            </div>
+            <div style="flex:1; min-width: 180px;">
+                <label style="font-size: 0.8em; font-weight: bold;">Allot Date & Time</label>
+                <input type="datetime-local" id="tDate" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <button type="submit" style="background:var(--accent); color:white; border:none; padding:10px 25px; border-radius:6px; cursor:pointer; font-weight:bold; height: 38px;">Assign</button>
         </form>
     </div>
 
@@ -69,63 +93,87 @@
 </div>
 
 <div class="modal" id="notificationModal">
+    <div class="modal-content alert-box">
+        <h1 style="font-size: 3em;">⏰</h1>
+        <h2>Update Required!</h2>
+        <p>Please update your progress and Post to the board.</p>
+        <button class="alert-btn" onclick="dismissAlert()">Got it</button>
+    </div>
+</div>
+
+<div class="modal" id="teamModal">
     <div class="modal-content">
-        <h2 style="color: var(--alert);">Team Update Required!</h2>
-        <p>Please check your assigned tasks and post updates now.</p>
-        <button class="alert-btn" onclick="dismissAlert()">Acknowledge</button>
+        <h3>Settings</h3>
+        <div style="margin: 15px 0;">
+            <strong>Reminder (Mins):</strong>
+            <input type="number" id="alertInterval" value="60" style="width: 60px; padding: 5px;">
+            <button onclick="updateTimer()" style="padding: 5px; background: var(--primary); color: white; border: none; border-radius: 4px;">Save</button>
+        </div>
+        <div id="teamList"></div>
+        <button onclick="showModal(false)" style="width:100%; margin-top:20px; padding:10px; background:#ccc; border:none; border-radius: 6px;">Close</button>
     </div>
 </div>
 
 <script>
-    // --- FIREBASE CONFIGURATION ---
+    // --- FIREBASE SETUP ---
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY_HERE", // Found in Firebase Project Settings
         databaseURL: "https://task-76764-default-rtdb.firebaseio.com/"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    let team = ["Sagar", "Suman"];
+    let currentStatusFilter = 'all';
+    let reminderTimer;
+
     function login() {
-        if(document.getElementById('passIn').value === '1234') {
+        if(document.getElementById('userIn').value === 'admin' && document.getElementById('passIn').value === '1234') {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
-            syncTasks(); // Initial Load
-        }
+            startTimer(document.getElementById('alertInterval').value);
+            renderUsers();
+            syncFromFirebase();
+        } else { alert("Access Denied"); }
     }
 
-    // --- REALTIME SYNC ---
-    function syncTasks() {
+    function syncFromFirebase() {
         db.ref('tasks').on('value', (snapshot) => {
             const data = snapshot.val();
-            const board = document.getElementById('taskBoard');
-            board.innerHTML = '';
-            
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    const t = data[key];
-                    const card = document.createElement('div');
-                    card.className = `task-card card-${t.status}`;
-                    card.innerHTML = `
-                        <div style="display:flex; justify-content:space-between;">
-                            <strong>${t.title}</strong>
-                            <button onclick="deleteTask('${key}')" style="border:none; background:none; cursor:pointer; color:#ccc;">✖</button>
-                        </div>
-                        <p style="font-size:0.8em; color:#666; margin:5px 0;">👤 ${t.assignee} | ⏰ ${t.date}</p>
-                        <textarea id="note-${key}" class="task-notes">${t.notes || ''}</textarea>
-                        <select id="status-${key}" style="width:100%; padding:8px; margin-bottom:10px; border-radius:4px;">
-                            <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
-                            <option value="progress" ${t.status==='progress'?'selected':''}>In Progress</option>
-                            <option value="done" ${t.status==='done'?'selected':''}>Done</option>
-                        </select>
-                        <button class="post-update-btn" onclick="postUpdate('${key}')">Post Update</button>
-                    `;
-                    board.appendChild(card);
-                });
-            }
+            render(data);
         });
     }
 
-    // --- ACTIONS ---
+    function render(data) {
+        const board = document.getElementById('taskBoard');
+        board.innerHTML = '';
+        if (!data) return;
+
+        Object.keys(data).forEach(id => {
+            const t = data[id];
+            if (currentStatusFilter !== 'all' && t.status !== currentStatusFilter) return;
+
+            const card = document.createElement('div');
+            card.className = `task-card card-${t.status}`;
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between;">
+                    <strong>${t.title}</strong>
+                    <button onclick="deleteTask('${id}')" style="border:none; background:none; cursor:pointer; color:#ccc;">✖</button>
+                </div>
+                <div style="font-size:0.8em; color:#666; margin:8px 0; background:#eee; display:inline-block; padding:3px 8px; border-radius:12px;">
+                    👤 ${t.assignee} | ⏰ Due: ${new Date(t.date).toLocaleString()}
+                </div>
+                <textarea id="note-${id}" class="task-notes" placeholder="Update notes...">${t.notes || ''}</textarea>
+                <select id="status-${id}" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ddd;">
+                    <option value="todo" ${t.status==='todo'?'selected':''}>📋 To Do</option>
+                    <option value="progress" ${t.status==='progress'?'selected':''}>⏳ In Progress</option>
+                    <option value="done" ${t.status==='done'?'selected':''}>✅ Completed</option>
+                </select>
+                <button class="post-update-btn" onclick="postTaskUpdate('${id}')">Post Update</button>
+            `;
+            board.appendChild(card);
+        });
+    }
+
     document.getElementById('taskForm').onsubmit = (e) => {
         e.preventDefault();
         const newTask = {
@@ -139,25 +187,37 @@
         e.target.reset();
     };
 
-    function postUpdate(id) {
+    function postTaskUpdate(id) {
         const notes = document.getElementById(`note-${id}`).value;
         const status = document.getElementById(`status-${id}`).value;
         db.ref('tasks/' + id).update({ notes, status });
-        alert("Update Synced!");
+        alert("Update Synced to Database!");
     }
 
-    function deleteTask(id) {
-        if(confirm("Delete task?")) db.ref('tasks/' + id).remove();
+    function deleteTask(id) { if(confirm("Delete?")) db.ref('tasks/' + id).remove(); }
+
+    function setView(v) { 
+        currentStatusFilter = v; 
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(v)));
+        syncFromFirebase(); 
     }
 
-    function triggerAlert() {
-        document.getElementById('notificationModal').style.display = 'flex';
-        if ("vibrate" in navigator) navigator.vibrate([400, 200, 400]);
+    function renderUsers() {
+        const sel = document.getElementById('tUser');
+        sel.innerHTML = team.map(m => `<option value="${m}">${m}</option>`).join('');
     }
 
-    function dismissAlert() {
-        document.getElementById('notificationModal').style.display = 'none';
+    function startTimer(mins) {
+        clearInterval(reminderTimer);
+        reminderTimer = setInterval(() => {
+            document.getElementById('notificationModal').style.display = 'flex';
+            if ("vibrate" in navigator) navigator.vibrate([400, 200, 400]);
+        }, mins * 60000);
     }
+
+    function updateTimer() { startTimer(document.getElementById('alertInterval').value); alert("Timer Updated"); }
+    function dismissAlert() { document.getElementById('notificationModal').style.display = 'none'; }
+    function showModal(s) { document.getElementById('teamModal').style.display = s ? 'flex' : 'none'; }
 </script>
 </body>
 </html>
