@@ -3,118 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URBAN CASA | Team Task Manager</title>
+    <title>URBAN CASA | Command Center</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     
     <style>
         :root {
             --primary: #2c3e50; --accent: #3498db; --todo: #f1c40f;
-            --progress: #3498db; --done: #2ecc71; --alert: #e74c3c; --bg: #f4f7f6;
+            --progress: #3498db; --done: #2ecc71; --alert: #e74c3c; --bg: #f8f9fa;
         }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg); color: #1a1a1a; }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--bg); color: #333; }
+        /* --- UI Components --- */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; display: none; }
+        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .admin-only { display: none; }
 
-        /* --- Login --- */
-        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 3000; }
-        .login-box { background: white; padding: 30px; border-radius: 12px; width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .login-box input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
-        .login-box button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        /* --- Filter Bar --- */
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #eee; background: white; cursor: pointer; font-size: 0.85em; font-weight: 600; }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* --- Main UI --- */
-        .container { max-width: 1100px; margin: 0 auto; padding: 20px; display: none; }
-        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .tab-btn { padding: 10px 20px; background: #e0e0e0; border: none; border-radius: 25px; cursor: pointer; white-space: nowrap; font-weight: 600; transition: 0.3s; }
-        .tab-btn.active { background: var(--primary); color: white; }
-
-        /* --- Task Board --- */
+        /* --- Task Cards --- */
         .task-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .task-card { background: white; padding: 20px; border-radius: 12px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 8px solid #ccc; }
+        .task-card { background: white; border-radius: 12px; border-top: 6px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; transition: transform 0.2s; }
+        .task-card:hover { transform: translateY(-3px); }
+        
+        /* Highlight Work */
+        .work-content { padding: 18px; flex-grow: 1; }
+        .work-title { font-size: 1.25em; font-weight: 800; color: #111; text-transform: uppercase; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .work-notes { font-size: 0.95em; color: #555; background: #fcfcfc; padding: 10px; border-radius: 8px; border-left: 3px solid #eee; min-height: 40px; }
+
+        /* Tiny Meta Data */
+        .tiny-meta { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; padding: 5px 18px; border-top: 1px solid #f9f9f9; }
+        .tiny-meta b { color: #888; }
+
+        /* Update Panel */
+        .update-panel { padding: 15px 18px; background: #fafafa; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+        .update-input { width: 100%; padding: 8px; margin-bottom: 6px; border: 1px solid #eee; border-radius: 6px; font-size: 0.85em; }
+        .save-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.85em; }
+
         .card-todo { border-top-color: var(--todo); }
         .card-progress { border-top-color: var(--progress); }
         .card-done { border-top-color: var(--done); opacity: 0.8; }
-        
-        .task-notes { width: 100%; height: 60px; margin: 10px 0; border: 1px solid #f0f0f0; padding: 8px; border-radius: 6px; background: #fafafa; font-size: 0.9em; resize: none; }
-        .post-update-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
 
-        /* --- Modals --- */
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:4000; align-items:center; justify-content:center; }
-        .modal-content { background:white; padding:25px; border-radius:12px; width:90%; max-width:400px; max-height: 90vh; overflow-y: auto; }
-        .settings-section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-        .settings-section h4 { margin-bottom: 10px; color: var(--primary); }
+        /* --- Login --- */
+        #loginOverlay { position: fixed; inset: 0; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .login-box { background: white; padding: 30px; border-radius: 16px; width: 320px; text-align: center; }
+        .login-box input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #eee; border-radius: 8px; }
+        .login-box button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div id="loginOverlay">
     <div class="login-box">
-        <h2 style="margin-bottom:10px;">URBAN CASA</h2>
-        <input type="text" id="userIn" placeholder="Username (admin)">
+        <h2 style="margin-bottom:15px;">URBAN CASA</h2>
+        <input type="text" id="userIn" placeholder="Username">
         <input type="password" id="passIn" placeholder="Password">
-        <button onclick="handleLogin()">Enter Floor</button>
+        <button onclick="handleLogin()">Sign In</button>
     </div>
 </div>
 
 <div class="container" id="mainApp">
     <header>
-        <h2>Task Central</h2>
-        <button onclick="showModal(true)" style="padding:8px 12px; cursor:pointer; border-radius:5px; border:1px solid #ccc; font-weight:bold;">⚙️ Settings</button>
+        <h3 id="welcomeMsg">Dashboard</h3>
+        <div>
+            <button class="admin-only" onclick="toggleModal(true)" style="padding:8px 12px; border-radius:6px; border:1px solid #ddd; cursor:pointer;">Settings</button>
+            <button onclick="logout()" style="margin-left:10px; color:red; border:none; background:none; cursor:pointer; font-weight:bold;">Logout</button>
+        </div>
     </header>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="setView('all')">All Work</button>
-        <button class="tab-btn" onclick="setView('todo')">To Do</button>
-        <button class="tab-btn" onclick="setView('progress')">In Progress</button>
-        <button class="tab-btn" onclick="setView('done')">Completed</button>
-    </div>
-
-    <div style="background:white; padding:20px; border-radius:12px; margin-bottom:20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-        <form id="taskForm" style="display:flex; flex-wrap:wrap; gap:10px; align-items: flex-end;">
-            <div style="flex:2; min-width: 200px;">
-                <label style="font-size: 0.8em; font-weight: bold;">Task Description</label>
-                <input type="text" id="tTitle" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
-            </div>
-            <div style="flex:1; min-width: 120px;">
-                <label style="font-size: 0.8em; font-weight: bold;">Assign To</label>
-                <select id="tUser" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"></select>
-            </div>
-            <div style="flex:1; min-width: 180px;">
-                <label style="font-size: 0.8em; font-weight: bold;">Allot Date & Time</label>
-                <input type="datetime-local" id="tDate" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
-            </div>
-            <button type="submit" style="background:var(--accent); color:white; border:none; padding:10px 25px; border-radius:6px; cursor:pointer; font-weight:bold; height: 38px;">Assign</button>
+    <div class="admin-only" style="background:white; padding:20px; border-radius:12px; margin-bottom:20px;">
+        <form id="taskForm" style="display:flex; flex-wrap:wrap; gap:10px;">
+            <input type="text" id="tTitle" placeholder="Task Description" required style="flex:2; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <select id="tUser" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;"></select>
+            <input type="datetime-local" id="tDate" required style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <button type="submit" style="padding:10px 20px; background:var(--primary); color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Assign</button>
         </form>
     </div>
 
-    <div class="task-board" id="taskBoard"></div>
-</div>
-
-<div class="modal" id="teamModal">
-    <div class="modal-content">
-        <h3 style="margin-bottom:20px;">Control Panel</h3>
-        
-        <div class="settings-section">
-            <h4>🔑 Change Password</h4>
-            <input type="password" id="newPass" placeholder="New Password" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:6px;">
-            <button onclick="updatePassword()" style="width:100%; padding:10px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Update Password</button>
-        </div>
-
-        <div class="settings-section">
-            <h4>⏱️ Reminder Timer</h4>
-            <input type="number" id="alertInterval" value="60" style="width: 70px; padding: 8px; border:1px solid #ddd; border-radius:4px;"> <span>Mins</span>
-            <button onclick="updateTimer()" style="padding: 8px; background: var(--primary); color: white; border: none; border-radius: 4px; margin-left: 10px;">Set</button>
-        </div>
-
-        <div class="settings-section">
-            <h4>👥 Team Members</h4>
-            <div id="teamList" style="margin-bottom:10px;"></div>
-        </div>
-
-        <button onclick="showModal(false)" style="width:100%; padding:12px; background:#eee; border:none; border-radius: 6px; font-weight:bold;">Close Settings</button>
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+        <button class="filter-btn" onclick="setFilter('todo', this)">To Do</button>
+        <button class="filter-btn" onclick="setFilter('progress', this)">Progress</button>
+        <button class="filter-btn" onclick="setFilter('done', this)">Done</button>
     </div>
+
+    <div class="task-board" id="taskBoard"></div>
 </div>
 
 <script>
@@ -122,88 +99,106 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let team = ["Sagar", "Suman"];
-    let currentStatusFilter = 'all';
-    let globalPass = "1234"; // Default fallback
+    let currentUser = JSON.parse(localStorage.getItem('casa_session')) || null;
+    let allUsers = {};
+    let currentFilter = 'all';
 
-    // Fetch password from Firebase on load
-    db.ref('credentials/adminPass').on('value', (snap) => {
-        if(snap.val()) globalPass = snap.val();
+    db.ref('users').on('value', snap => {
+        allUsers = snap.val() || {};
+        if (!allUsers.admin) db.ref('users/admin').set({ password: "1234", role: "admin" });
+        updateDropdown();
     });
 
+    if(currentUser) startApp();
+
     function handleLogin() {
-        const u = document.getElementById('userIn').value;
+        const u = document.getElementById('userIn').value.toLowerCase().trim();
         const p = document.getElementById('passIn').value;
-        if(u === 'admin' && p === globalPass) {
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-            renderUsers();
-            syncFromFirebase();
-        } else { alert("Wrong Credentials"); }
+        if(allUsers[u] && allUsers[u].password === p) {
+            currentUser = { name: u, role: allUsers[u].role || 'staff' };
+            localStorage.setItem('casa_session', JSON.stringify(currentUser));
+            startApp();
+        } else { alert("Login failed"); }
     }
 
-    function updatePassword() {
-        const newP = document.getElementById('newPass').value;
-        if(newP.length < 4) {
-            alert("Password too short!");
-            return;
-        }
-        db.ref('credentials').update({ adminPass: newP }).then(() => {
-            alert("Password updated successfully!");
-            document.getElementById('newPass').value = '';
-        });
+    function logout() { localStorage.removeItem('casa_session'); location.reload(); }
+
+    function startApp() {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        document.getElementById('welcomeMsg').innerText = currentUser.name.toUpperCase();
+        if(currentUser.role === 'admin') document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        syncTasks();
     }
 
-    function syncFromFirebase() {
-        db.ref('tasks').on('value', (snapshot) => {
-            const data = snapshot.val();
+    function setFilter(status, btn) {
+        currentFilter = status;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        syncTasks();
+    }
+
+    function syncTasks() {
+        db.ref('tasks').on('value', snap => {
+            const tasks = snap.val();
             const board = document.getElementById('taskBoard');
             board.innerHTML = '';
-            if (!data) return;
-            Object.keys(data).forEach(id => {
-                const t = data[id];
-                if (currentStatusFilter !== 'all' && t.status !== currentStatusFilter) return;
+            if(!tasks) return;
+            
+            Object.keys(tasks).reverse().forEach(id => {
+                const t = tasks[id];
+                if (currentFilter !== 'all' && t.status !== currentFilter) return;
+
+                const isOwner = (currentUser.name.toLowerCase() === t.assignee.toLowerCase() || currentUser.role === 'admin');
                 const card = document.createElement('div');
                 card.className = `task-card card-${t.status}`;
                 card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between;"><strong>${t.title}</strong><button onclick="deleteTask('${id}')" style="border:none; background:none; cursor:pointer; color:#ccc;">✖</button></div>
-                    <div style="font-size:0.8em; color:#666; margin:8px 0; background:#eee; display:inline-block; padding:3px 8px; border-radius:12px;">👤 ${t.assignee} | ⏰ ${new Date(t.date).toLocaleString()}</div>
-                    <textarea id="note-${id}" class="task-notes">${t.notes || ''}</textarea>
-                    <select id="status-${id}" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ddd;">
-                        <option value="todo" ${t.status==='todo'?'selected':''}>📋 To Do</option>
-                        <option value="progress" ${t.status==='progress'?'selected':''}>⏳ In Progress</option>
-                        <option value="done" ${t.status==='done'?'selected':''}>✅ Completed</option>
-                    </select>
-                    <button class="post-update-btn" onclick="postTaskUpdate('${id}')">Post Update</button>
+                    <div class="work-content">
+                        <div class="work-title">${t.title}</div>
+                        <div class="work-notes">${t.notes || ''}</div>
+                    </div>
+                    
+                    <div class="tiny-meta">
+                        <span>👤 <b>${t.assignee}</b></span>
+                        <span>ST: <b>${t.status}</b></span>
+                        <span>⏰ <b>${new Date(t.date).toLocaleString([], {hour: '2-digit', minute:'2-digit', day:'numeric', month:'short'})}</b></span>
+                    </div>
+
+                    ${isOwner ? `
+                        <div class="update-panel">
+                            <input type="datetime-local" id="date-${id}" class="update-input" value="${t.date}">
+                            <textarea id="note-${id}" class="update-input" style="height:45px; resize:none;" placeholder="Notes">${t.notes || ''}</textarea>
+                            <select id="status-${id}" class="update-input">
+                                <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
+                                <option value="progress" ${t.status==='progress'?'selected':''}>Progress</option>
+                                <option value="done" ${t.status==='done'?'selected':''}>Done</option>
+                            </select>
+                            <button onclick="updateTask('${id}')" class="save-btn">UPDATE</button>
+                        </div>
+                    ` : ''}
                 `;
                 board.appendChild(card);
             });
         });
     }
 
-    document.getElementById('taskForm').onsubmit = (e) => {
-        e.preventDefault();
-        db.ref('tasks').push({
-            title: document.getElementById('tTitle').value,
-            assignee: document.getElementById('tUser').value,
-            date: document.getElementById('tDate').value,
-            status: 'todo', notes: ''
-        });
-        e.target.reset();
-    };
-
-    function postTaskUpdate(id) {
+    function updateTask(id) {
+        const d = document.getElementById(`date-${id}`).value;
+        if(!d) return alert("Select Date");
         db.ref('tasks/' + id).update({
+            date: d,
             notes: document.getElementById(`note-${id}`).value,
             status: document.getElementById(`status-${id}`).value
         });
-        alert("Synced!");
     }
 
-    function deleteTask(id) { if(confirm("Delete?")) db.ref('tasks/' + id).remove(); }
-    function setView(v) { currentStatusFilter = v; syncFromFirebase(); }
-    function renderUsers() { document.getElementById('tUser').innerHTML = team.map(m => `<option value="${m}">${m}</option>`).join(''); }
-    function showModal(s) { document.getElementById('teamModal').style.display = s ? 'flex' : 'none'; }
+    function updateDropdown() { document.getElementById('tUser').innerHTML = Object.keys(allUsers).map(u => `<option value="${u}">${u}</option>`).join(''); }
+    
+    document.getElementById('taskForm').onsubmit = (e) => {
+        e.preventDefault();
+        db.ref('tasks').push({ title: document.getElementById('tTitle').value, assignee: document.getElementById('tUser').value, date: document.getElementById('tDate').value, status: 'todo', notes: '' });
+        e.target.reset();
+    };
 </script>
 </body>
 </html>
