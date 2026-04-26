@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>URBAN CASA | Command Center</title>
+    <title>URBAN CASA | HQ</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     
@@ -12,154 +12,135 @@
             --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --alert: #e74c3c;
             --status-new: #3498db; --status-progress: #f1c40f; --status-pending: #e67e22; --status-completed: #2ecc71;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
-        body { background-color: var(--bg); color: #1a1a1a; -webkit-font-smoothing: antialiased; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: #1a1a1a; overflow-x: hidden; }
 
         .container { max-width: 1200px; margin: 0 auto; padding: 15px; display: none; }
         
-        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .task-badge { background: var(--alert); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .task-badge { background: var(--alert); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 800; }
 
-        /* Animations */
-        @keyframes blink-red { 0% { box-shadow: 0 0 0px var(--alert); } 50% { box-shadow: 0 0 15px var(--alert); border-color: var(--alert); } 100% { box-shadow: 0 0 0px var(--alert); } }
-        .is-overdue { animation: blink-red 2s infinite ease-in-out; border-left: 8px solid var(--alert) !important; }
+        /* Overdue Alert */
+        @keyframes pulse-red { 0% { border-color: #ddd; } 50% { border-color: var(--alert); box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); } 100% { border-color: #ddd; } }
+        .is-overdue { border-left: 8px solid var(--alert) !important; animation: pulse-red 2s infinite; }
 
-        .time-box { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
-        .shortcut-row { display: flex; gap: 5px; margin-top: 8px; }
-        .btn-time { flex: 1; padding: 8px; font-size: 10px; font-weight: bold; background: #f0f2f5; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; text-transform: uppercase; }
+        /* Validation Error */
+        .time-box { background: #fff; border: 2px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 15px; transition: 0.3s; }
+        .time-box.validation-error { border-color: var(--alert) !important; background: #fff5f5 !output; }
 
         .task-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-        .task-card { background: white; border-radius: 12px; border-left: 6px solid #ccc; padding: 15px; cursor: pointer; transition: 0.2s; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .task-card { background: white; border-radius: 12px; border-left: 6px solid #ccc; padding: 18px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: transform 0.1s; }
+        .task-card:active { transform: scale(0.98); }
         
         .card-new { border-left-color: var(--status-new); }
         .card-in-progress { border-left-color: var(--status-progress); }
         .card-pending { border-left-color: var(--status-pending); }
-        .card-completed { border-left-color: var(--status-completed); opacity: 0.6; }
+        .card-completed { border-left-color: var(--status-completed); opacity: 0.7; }
 
-        .card-title { font-weight: 800; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 5px; color: #333; }
-        
-        /* Drawer & Modals */
-        .drawer, .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: flex-end; }
+        .drawer, .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: flex-end; }
         .modal { justify-content: center; align-items: center; }
-        .drawer-content { background: white; width: 100%; max-width: 500px; height: 100%; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; }
-        .modal-content { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 16px; position: relative; }
+        .drawer-content { background: white; width: 100%; max-width: 450px; height: 100%; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
-        .history-item { position: relative; padding-left: 20px; border-left: 2px solid #eee; margin-bottom: 15px; font-size: 13px; }
-        .history-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
-
-        .update-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: white; }
-        .save-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-        .filter-section { margin-bottom: 15px; }
-        .filter-label { font-size: 10px; font-weight: 800; color: #999; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        .filter-group { overflow-x:auto; display:flex; gap:8px; padding-bottom: 5px; }
-        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.3s; }
+        .update-input { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; outline: none; }
+        .save-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        
+        .filter-btn { padding: 10px 18px; border-radius: 25px; border: 1px solid #ddd; background: white; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
         .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .filter-count { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px; margin-left: 5px; font-size: 9px; }
 
-        .noti-btn { background: #fff; border: 1px solid #ddd; padding: 8px; border-radius: 50%; cursor: pointer; }
+        /* Forced Overlay */
+        #forcedAlertOverlay { position: fixed; inset: 0; background: rgba(231, 76, 60, 0.98); z-index: 99999; display: none; align-items: center; justify-content: center; color: white; text-align: center; padding: 30px; }
+        
         .admin-only { display: none; }
     </style>
 </head>
 <body>
 
+<div id="forcedAlertOverlay">
+    <div>
+        <h1 style="font-size: 4rem;">⏰</h1>
+        <h2>UPDATE REQUIRED</h2>
+        <p style="margin: 20px 0;">30 minutes have passed. You must update your task status and time now.</p>
+        <button onclick="dismissForceAlert()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: 900; background: white; color: var(--alert);">I AM UPDATING NOW</button>
+    </div>
+</div>
+
 <div id="loginOverlay" style="position:fixed; inset:0; background:var(--primary); display:flex; align-items:center; justify-content:center; z-index:11000;">
-    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:350px; text-align:center;">
-        <h2 style="margin-bottom:20px;">URBAN CASA</h2>
+    <div style="background:white; padding:40px; border-radius:20px; width:90%; max-width:380px; text-align:center;">
+        <h1 style="margin-bottom:25px; letter-spacing: 2px;">URBAN CASA</h1>
         <input type="text" id="userIn" placeholder="Username" class="update-input">
         <input type="password" id="passIn" placeholder="Password" class="update-input">
-        <button onclick="handleLogin()" class="save-btn" style="background:var(--accent)">Sign In</button>
+        <button onclick="handleLogin()" class="save-btn" style="background:var(--accent)">LOGIN</button>
     </div>
 </div>
 
 <div class="container" id="mainApp">
     <header>
         <div>
-            <h3 id="welcomeMsg" style="font-size: 11px; color: #888;">...</h3>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-weight:900; font-size: 1.2rem;">WORK ORDERS</span>
-                <span id="taskBadge" class="task-badge">0</span>
-            </div>
+            <p id="welcomeMsg" style="font-size: 10px; font-weight: bold; color: #aaa;"></p>
+            <h2 style="font-weight: 900;">DASHBOARD <span id="taskBadge" class="task-badge">0</span></h2>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-            <button class="noti-btn" id="notiBell" onclick="enableNotifications()">🔔</button>
-            <button class="admin-only" onclick="toggleAdminModal(true)" style="border:none; background:none; font-size:1.4rem; cursor:pointer;">⚙️</button>
-            <button onclick="logout()" style="border:none; background:none; color:var(--alert); font-weight:bold; cursor:pointer;">Logout</button>
+        <div style="display:flex; gap:12px;">
+            <button class="admin-only" onclick="toggleAdminModal(true)" style="background:none; border:none; font-size: 1.5rem;">⚙️</button>
+            <button onclick="logout()" style="background:none; border:none; color: var(--alert); font-weight: 900;">EXIT</button>
         </div>
     </header>
 
-    <div class="admin-only" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px;">
-        <form id="taskForm" style="display:flex; flex-direction:column; gap:8px;">
-            <input type="text" id="tTitle" placeholder="Work description..." required class="update-input" style="margin:0">
-            <select id="tUser" class="update-input" style="margin:0"></select>
-            <div class="time-box">
-                <input type="datetime-local" id="tDate" required class="update-input" style="margin-bottom:5px;">
-                <div class="shortcut-row">
-                    <button type="button" class="btn-time" onclick="setQuickDate('tDate', 'now')">Now</button>
-                    <button type="button" class="btn-time" onclick="setQuickDate('tDate', 'tomorrow')">Tmr 9AM</button>
-                </div>
-            </div>
-            <button type="submit" class="save-btn">Assign Task</button>
-        </form>
-    </div>
-
-    <div class="filter-section">
-        <span class="filter-label">Work Status</span>
-        <div class="filter-group" id="statusFilterBar">
-            <button class="filter-btn active" onclick="setFilter('status', 'new', this)">New <span class="filter-count" id="cnt-new">0</span></button>
-            <button class="filter-btn" onclick="setFilter('status', 'in-progress', this)">Progress <span class="filter-count" id="cnt-in-progress">0</span></button>
-            <button class="filter-btn" onclick="setFilter('status', 'pending', this)">Wait <span class="filter-count" id="cnt-pending">0</span></button>
-            <button class="filter-btn" onclick="setFilter('status', 'completed', this)">Done <span class="filter-count" id="cnt-completed">0</span></button>
+    <div class="admin-only" style="background:white; padding:20px; border-radius:15px; margin-bottom:20px;">
+        <h4 style="margin-bottom:10px; font-size:12px;">ASSIGN NEW WORK</h4>
+        <input type="text" id="tTitle" placeholder="What needs to be done?" class="update-input">
+        <select id="tUser" class="update-input"></select>
+        <div class="time-box" id="tTimeBox">
+            <p style="font-size:10px; font-weight:bold; margin-bottom:5px;">DEADLINE *</p>
+            <input type="datetime-local" id="tDate" class="update-input" style="margin:0">
         </div>
+        <button onclick="createNewTask()" class="save-btn">CREATE ORDER</button>
     </div>
 
-    <div class="filter-section admin-only">
-        <span class="filter-label">Track Staff</span>
-        <div class="filter-group" id="teamFilterBar"></div>
+    <div style="overflow-x: auto; display: flex; gap: 8px; margin-bottom: 20px;" id="statusFilterBar">
+        <button class="filter-btn active" onclick="setFilter('status', 'new', this)">NEW (<span id="cnt-new">0</span>)</button>
+        <button class="filter-btn" onclick="setFilter('status', 'in-progress', this)">ACTIVE (<span id="cnt-in-progress">0</span>)</button>
+        <button class="filter-btn" onclick="setFilter('status', 'pending', this)">WAIT (<span id="cnt-pending">0</span>)</button>
+        <button class="filter-btn" onclick="setFilter('status', 'completed', this)">DONE (<span id="cnt-completed">0</span>)</button>
     </div>
+
+    <div class="admin-only" style="overflow-x: auto; display: flex; gap: 8px; margin-bottom: 20px;" id="teamFilterBar"></div>
 
     <div class="task-board" id="taskBoard"></div>
 </div>
 
 <div class="drawer" id="taskDrawer" onclick="closeDrawer(event)">
     <div class="drawer-content" onclick="event.stopPropagation()">
-        <div style="display:flex; justify-content:space-between;">
-            <h2 id="dTitle" style="text-transform:uppercase; font-weight:900;">Title</h2>
-            <button onclick="document.getElementById('taskDrawer').style.display='none'" style="border:none; background:none; font-size:20px;">✕</button>
-        </div>
-        <p id="dMeta" style="font-size:12px; color:#888; margin-bottom:15px;"></p>
-        <div class="history-container" id="dHistory" style="flex:1; overflow-y:auto; margin-bottom:15px;"></div>
+        <h2 id="dTitle" style="text-transform:uppercase; font-weight:900;"></h2>
+        <p id="dMeta" style="margin-bottom:20px; font-size:12px; color: #888;"></p>
         
-        <div style="background:#f9f9f9; padding:15px; border-radius:12px;">
-            <textarea id="dNoteInput" class="update-input" style="height:80px;" placeholder="Add update note..."></textarea>
-            <div class="time-box">
-                <select id="dStatusInput" class="update-input" style="margin-bottom:8px;">
+        <div id="dHistory" style="flex:1; overflow-y:auto; border-top: 1px solid #eee; padding-top: 15px;"></div>
+        
+        <div style="background:#f9f9f9; padding:20px; border-radius:15px; margin-top:20px;">
+            <textarea id="dNote" class="update-input" style="height:100px;" placeholder="Add a note..."></textarea>
+            <div class="time-box" id="dTimeBox">
+                <select id="dStatus" class="update-input">
                     <option value="new">New</option>
                     <option value="in-progress">In Progress</option>
                     <option value="pending">Pending</option>
                     <option value="completed">Completed</option>
                 </select>
-                <input type="datetime-local" id="dDateInput" class="update-input" style="margin:0;">
-                <div class="shortcut-row">
-                    <button type="button" class="btn-time" onclick="setQuickDate('dDateInput', 'now')">Now</button>
-                    <button type="button" class="btn-time" onclick="setQuickDate('dDateInput', 'plus2')">+2 Hrs</button>
-                </div>
+                <input type="datetime-local" id="dDate" class="update-input" style="margin:0">
+                <button onclick="setQuickDate('dDate')" style="width:100%; margin-top:10px; padding:8px; font-size:10px; font-weight:bold;">SET TO CURRENT TIME</button>
             </div>
-            <button id="dSaveBtn" class="save-btn" style="background:var(--accent)">Save Update</button>
-            <div id="adminDeleteArea"></div>
+            <button id="dSaveBtn" class="save-btn" style="background:var(--accent)">SAVE CHANGES</button>
+            <div id="dAdminActions"></div>
         </div>
     </div>
 </div>
 
 <div class="modal" id="adminModal" onclick="toggleAdminModal(false)">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <h3>Settings</h3>
-        <input type="text" id="newStaffName" placeholder="Staff Name" class="update-input" style="margin-top:10px;">
-        <input type="password" id="newStaffPass" placeholder="Password" class="update-input">
-        <button onclick="addStaffMember()" class="save-btn" style="padding:10px;">Add Staff</button>
-        <div id="staffListUI" style="margin-top:15px; max-height:150px; overflow-y:auto;"></div>
-        <button onclick="toggleAdminModal(false)" class="save-btn" style="background:#eee; color:#333; margin-top:10px;">Close</button>
+        <h3>USER MGMT</h3>
+        <input type="text" id="newStaffName" placeholder="Name" class="update-input" style="margin-top:15px;">
+        <input type="password" id="newStaffPass" placeholder="Pass" class="update-input">
+        <button onclick="addStaff()" class="save-btn">ADD USER</button>
+        <div id="staffListUI" style="margin-top:20px; max-height:200px; overflow-y:auto;"></div>
     </div>
 </div>
 
@@ -172,30 +153,20 @@
     let allUsers = {};
     let activeFilters = { status: 'new', team: '' };
 
-    function getNowISO() {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        return now.toISOString().slice(0, 16);
+    // --- FORCED REMINDERS ---
+    function initReminders() {
+        if ("Notification" in window) Notification.requestPermission();
+        setInterval(() => {
+            if (!currentUser) return;
+            if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+            if (Notification.permission === "granted") new Notification("URBAN CASA", { body: "30min Reminder: Update your work orders." });
+            document.getElementById('forcedAlertOverlay').style.display = 'flex';
+        }, 1800000); 
     }
 
-    function setQuickDate(inputId, type) {
-        const input = document.getElementById(inputId);
-        let date = new Date();
-        if (type === 'tomorrow') { date.setDate(date.getDate() + 1); date.setHours(9,0,0,0); }
-        if (type === 'plus2') { date.setHours(date.getHours() + 2); }
-        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-        input.value = date.toISOString().slice(0, 16);
-    }
+    function dismissForceAlert() { document.getElementById('forcedAlertOverlay').style.display = 'none'; }
 
-    // AUTH & STARTUP
-    db.ref('users').on('value', snap => {
-        allUsers = snap.val() || {};
-        updateTeamFilters();
-        renderStaffList();
-    });
-
-    if(currentUser) startApp();
-
+    // --- CORE LOGIC ---
     function handleLogin() {
         const u = document.getElementById('userIn').value.toLowerCase().trim();
         const p = document.getElementById('passIn').value;
@@ -203,163 +174,146 @@
             currentUser = { name: u, role: allUsers[u].role || 'staff' };
             localStorage.setItem('casa_session', JSON.stringify(currentUser));
             startApp();
-        } else { alert("Login failed."); }
+        } else alert("Invalid Login");
     }
 
     function startApp() {
         document.getElementById('loginOverlay').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
-        document.getElementById('welcomeMsg').innerText = "Logged as: " + currentUser.name.toUpperCase();
-        
+        document.getElementById('welcomeMsg').innerText = currentUser.name.toUpperCase();
         if(currentUser.role === 'admin') {
             document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
-            if(!activeFilters.team) {
-                const firstStaff = Object.keys(allUsers).find(n => n !== 'admin');
-                if(firstStaff) activeFilters.team = firstStaff;
-            }
+            if(!activeFilters.team) activeFilters.team = Object.keys(allUsers).find(k => k !== 'admin');
         } else { activeFilters.team = currentUser.name; }
+        initReminders();
         syncTasks();
     }
 
-    // MAIN TASK SYNC
     function syncTasks() {
         db.ref('tasks').on('value', snap => {
             const tasks = snap.val() || {};
             const board = document.getElementById('taskBoard');
             board.innerHTML = '';
-            let stats = { new: 0, 'in-progress': 0, pending: 0, completed: 0 };
-            const now = new Date();
-
+            let stats = { new:0, 'in-progress':0, pending:0, completed:0 };
+            
             Object.entries(tasks).reverse().forEach(([id, t]) => {
-                if (t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
+                if(t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
                     stats[t.status]++;
-                    if (t.status === activeFilters.status) {
-                        const isOverdue = new Date(t.date) < now && t.status !== 'completed';
+                    if(t.status === activeFilters.status) {
+                        const isOverdue = new Date(t.date) < new Date() && t.status !== 'completed';
                         const card = document.createElement('div');
                         card.className = `task-card card-${t.status} ${isOverdue ? 'is-overdue' : ''}`;
                         card.onclick = () => openDrawer(id, t);
                         card.innerHTML = `
-                            <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:5px;">
-                                <span>👤 ${t.assignee.toUpperCase()}</span>
-                                ${isOverdue ? '<span style="color:var(--alert); font-weight:bold;">DELAYED</span>' : ''}
-                            </div>
-                            <div class="card-title">${t.title}</div>
-                            <div style="font-size:11px; color:#666;">⏰ ${new Date(t.date).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
+                            <p style="font-size:10px; font-weight:bold;">${t.assignee.toUpperCase()}</p>
+                            <h3 style="margin:5px 0;">${t.title}</h3>
+                            <p style="font-size:11px;">⏰ ${new Date(t.date).toLocaleString()}</p>
                         `;
                         board.appendChild(card);
                     }
                 }
             });
-            for (let key in stats) { if (document.getElementById('cnt-' + key)) document.getElementById('cnt-' + key).innerText = stats[key]; }
+            ['new','in-progress','pending','completed'].forEach(s => document.getElementById('cnt-'+s).innerText = stats[s]);
             document.getElementById('taskBadge').innerText = stats.new + stats['in-progress'];
         });
     }
 
-    // DRAWER LOGIC (FIXED)
     function openDrawer(id, t) {
-        const drw = document.getElementById('taskDrawer');
-        drw.style.display = 'flex';
+        const dr = document.getElementById('taskDrawer');
+        dr.style.display = 'flex';
         document.getElementById('dTitle').innerText = t.title;
-        document.getElementById('dMeta').innerText = "Assignee: " + t.assignee.toUpperCase();
-        document.getElementById('dStatusInput').value = t.status;
-        document.getElementById('dDateInput').value = t.date || getNowISO();
-        document.getElementById('dNoteInput').value = '';
+        document.getElementById('dMeta').innerText = "Assigned to: " + t.assignee.toUpperCase();
+        document.getElementById('dStatus').value = t.status;
+        document.getElementById('dDate').value = t.date;
+        document.getElementById('dNote').value = '';
         
-        const historyBox = document.getElementById('dHistory');
-        historyBox.innerHTML = '<p class="filter-label">Activity Log</p>';
-        (t.history || []).slice().reverse().forEach(item => {
-            historyBox.innerHTML += `<div class="history-item">
-                <span style="font-weight:bold;">${item.user.toUpperCase()}</span>
-                <span style="font-size:10px; color:#999; margin-left:10px;">${new Date(item.date).toLocaleTimeString()}</span>
-                <p>${item.text}</p>
+        const histUI = document.getElementById('dHistory');
+        histUI.innerHTML = '';
+        (t.history || []).slice().reverse().forEach(h => {
+            histUI.innerHTML += `<div style="margin-bottom:12px; font-size:13px;">
+                <b>${h.user.toUpperCase()}</b> <span style="font-size:10px; color:#999;">${new Date(h.date).toLocaleTimeString()}</span>
+                <p>${h.text}</p>
             </div>`;
         });
 
         document.getElementById('dSaveBtn').onclick = () => {
-            const note = document.getElementById('dNoteInput').value.trim();
-            const status = document.getElementById('dStatusInput').value;
-            const date = document.getElementById('dDateInput').value;
-            let hist = t.history || [];
-            if(note) hist.push({ text: note, user: currentUser.name, date: Date.now() });
-            db.ref('tasks/' + id).update({ status, date, history: hist }).then(() => drw.style.display = 'none');
+            const dateVal = document.getElementById('dDate').value;
+            if(!dateVal) {
+                document.getElementById('dTimeBox').classList.add('validation-error');
+                alert("ERROR: You must set a Date/Time to save.");
+                return;
+            }
+            let h = t.history || [];
+            const note = document.getElementById('dNote').value.trim();
+            if(note) h.push({ user: currentUser.name, text: note, date: Date.now() });
+            db.ref('tasks/'+id).update({ status: document.getElementById('dStatus').value, date: dateVal, history: h });
+            dr.style.display = 'none';
         };
 
-        const delArea = document.getElementById('adminDeleteArea');
-        delArea.innerHTML = currentUser.role === 'admin' ? `<button onclick="deleteTask('${id}')" style="color:var(--alert); border:none; background:none; font-size:11px; width:100%; margin-top:10px; cursor:pointer;">DELETE TASK</button>` : '';
+        document.getElementById('dAdminActions').innerHTML = currentUser.role === 'admin' ? 
+            `<button onclick="deleteTask('${id}')" style="background:none; border:none; color:red; font-size:11px; margin-top:15px; width:100%;">DELETE ORDER</button>` : '';
     }
 
-    // SETTINGS LOGIC
-    function toggleAdminModal(show) { document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; }
-    
-    function addStaffMember() {
+    // --- HELPERS ---
+    function setQuickDate(id) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById(id).value = now.toISOString().slice(0,16);
+        document.querySelectorAll('.time-box').forEach(b => b.classList.remove('validation-error'));
+    }
+
+    function createNewTask() {
+        const title = document.getElementById('tTitle').value;
+        const date = document.getElementById('tDate').value;
+        if(!title || !date) {
+            document.getElementById('tTimeBox').classList.add('validation-error');
+            alert("Please fill in Title and Date");
+            return;
+        }
+        db.ref('tasks').push({
+            title, date, assignee: document.getElementById('tUser').value, status: 'new',
+            history: [{ user: currentUser.name, text: "Created task", date: Date.now() }]
+        });
+        document.getElementById('tTitle').value = '';
+    }
+
+    function setFilter(type, val, btn) {
+        activeFilters[type] = val;
+        btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        syncTasks();
+    }
+
+    db.ref('users').on('value', snap => {
+        allUsers = snap.val() || {};
+        const teamFilter = document.getElementById('teamFilterBar');
+        const staffSelect = document.getElementById('tUser');
+        teamFilter.innerHTML = ''; staffSelect.innerHTML = '';
+        Object.keys(allUsers).filter(u => u !== 'admin').forEach(u => {
+            staffSelect.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`;
+            teamFilter.innerHTML += `<button class="filter-btn ${activeFilters.team===u?'active':''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`;
+        });
+        renderStaffList();
+    });
+
+    function addStaff() {
         const n = document.getElementById('newStaffName').value.toLowerCase().trim();
         const p = document.getElementById('newStaffPass').value;
-        if(n && p) {
-            db.ref('users/' + n).set({ password: p, role: 'staff' });
-            document.getElementById('newStaffName').value = '';
-            document.getElementById('newStaffPass').value = '';
-        }
+        if(n && p) db.ref('users/'+n).set({ password: p, role:'staff' });
     }
 
     function renderStaffList() {
-        const ui = document.getElementById('staffListUI');
-        ui.innerHTML = Object.keys(allUsers).map(u => `
-            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; font-size:12px;">
-                <span>${u.toUpperCase()}</span>
-                ${u !== 'admin' ? `<button onclick="db.ref('users/${u}').remove()" style="color:var(--alert); border:none; background:none;">Remove</button>` : ''}
+        document.getElementById('staffListUI').innerHTML = Object.keys(allUsers).map(u => `
+            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+                <span>${u}</span> <button onclick="db.ref('users/${u}').remove()" style="color:red; border:none; background:none;">DEL</button>
             </div>
         `).join('');
     }
 
-    // REMINDERS
-    function enableNotifications() {
-        Notification.requestPermission().then(perm => {
-            if(perm === 'granted') {
-                document.getElementById('notiBell').style.background = 'var(--status-completed)';
-                new Notification("Urban Casa", { body: "Reminders active. Every 30 mins." });
-            }
-        });
-    }
-
-    setInterval(() => {
-        if(currentUser && Notification.permission === 'granted') {
-            if(navigator.vibrate) navigator.vibrate([300, 100, 300]);
-            new Notification("Update Required", { body: "Please check and update your active work orders." });
-        }
-    }, 1800000);
-
-    // HELPERS
+    function toggleAdminModal(s) { document.getElementById('adminModal').style.display = s?'flex':'none'; }
+    function closeDrawer(e) { if(e.target.id==='taskDrawer') e.target.style.display='none'; }
+    function deleteTask(id) { if(confirm("Delete?")) db.ref('tasks/'+id).remove(); document.getElementById('taskDrawer').style.display='none'; }
     function logout() { localStorage.removeItem('casa_session'); location.reload(); }
-    function closeDrawer(e) { if(e.target.id === 'taskDrawer') e.target.style.display = 'none'; }
-    function deleteTask(id) { if(confirm("Delete this task?")) { db.ref('tasks/' + id).remove(); document.getElementById('taskDrawer').style.display = 'none'; }}
-    function setFilter(type, val, btn) {
-        activeFilters[type] = val;
-        document.querySelectorAll(type === 'status' ? '#statusFilterBar .filter-btn' : '#teamFilterBar .filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        syncTasks();
-    }
-    function updateTeamFilters() {
-        const list = Object.keys(allUsers).filter(n => n !== 'admin');
-        document.getElementById('tUser').innerHTML = list.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join('');
-        const bar = document.getElementById('teamFilterBar');
-        bar.innerHTML = '';
-        list.forEach((u, i) => {
-            const act = activeFilters.team === u || (!activeFilters.team && i === 0);
-            if(act) activeFilters.team = u;
-            bar.innerHTML += `<button class="filter-btn ${act?'active':''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`;
-        });
-        syncTasks();
-    }
-
-    document.getElementById('taskForm').onsubmit = (e) => {
-        e.preventDefault();
-        db.ref('tasks').push({ 
-            title: document.getElementById('tTitle').value, assignee: document.getElementById('tUser').value, 
-            date: document.getElementById('tDate').value, status: 'new',
-            history: [{ text: "Task created.", user: currentUser.name, date: Date.now() }]
-        });
-        e.target.reset(); setQuickDate('tDate', 'now');
-    };
 </script>
 </body>
 </html>
