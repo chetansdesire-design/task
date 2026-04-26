@@ -2,123 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>URBAN CASA | Command Center</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     
     <style>
         :root {
-            --primary: #2c3e50; --accent: #3498db; --todo: #f1c40f;
-            --progress: #3498db; --done: #2ecc71; --alert: #e74c3c; --bg: #f8f9fa;
+            --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --alert: #e74c3c;
+            --status-new: #3498db; --status-progress: #f1c40f; --status-pending: #e67e22; --status-completed: #2ecc71;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg); color: #1a1a1a; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        body { background-color: var(--bg); color: #1a1a1a; -webkit-font-smoothing: antialiased; }
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; display: none; }
-        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .admin-only { display: none; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px; display: none; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .task-badge { background: var(--alert); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
 
-        /* Filter Section */
-        .filters-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .filter-group { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-        .filter-label { font-size: 10px; font-weight: 800; color: #999; text-transform: uppercase; margin-bottom: 2px; display: block; }
-        .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; background: white; cursor: pointer; font-size: 0.8em; font-weight: 600; white-space: nowrap; transition: 0.2s; }
+        /* Blinking Animations */
+        @keyframes blink-red { 0% { box-shadow: 0 0 0px var(--alert); } 50% { box-shadow: 0 0 15px var(--alert); border-color: var(--alert); } 100% { box-shadow: 0 0 0px var(--alert); } }
+        @keyframes blink-blue { 0% { opacity: 1; } 50% { opacity: 0.6; transform: scale(1.01); } 100% { opacity: 1; } }
+        .is-overdue { animation: blink-red 2s infinite ease-in-out; border-left: 8px solid var(--alert) !important; }
+        .is-new { animation: blink-blue 3s infinite ease-in-out; }
+
+        .time-box { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+        .shortcut-row { display: flex; gap: 5px; margin-top: 8px; }
+        .btn-time { flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #f0f2f5; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; text-transform: uppercase; }
+
+        .task-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .task-card { background: white; border-radius: 12px; border-left: 6px solid #ccc; padding: 15px; cursor: pointer; transition: 0.2s; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        
+        .card-new { border-left-color: var(--status-new); }
+        .card-in-progress { border-left-color: var(--status-progress); }
+        .card-pending { border-left-color: var(--status-pending); }
+        .card-completed { border-left-color: var(--status-completed); opacity: 0.6; }
+
+        .card-title { font-weight: 800; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 5px; color: #333; }
+        .card-assignee { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
+        
+        .drawer, .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: flex-end; }
+        .modal { justify-content: center; align-items: center; }
+        .drawer-content { background: white; width: 100%; max-width: 500px; height: 100%; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; }
+        .modal-content { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 16px; position: relative; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .update-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: white; }
+        .save-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        .filter-section { margin-bottom: 15px; }
+        .filter-label { font-size: 10px; font-weight: 800; color: #999; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .filter-group { overflow-x:auto; display:flex; gap:8px; padding-bottom: 5px; }
+        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.3s; }
         .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .filter-count { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px; margin-left: 5px; font-size: 9px; }
 
-        /* Task Cards */
-        .task-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .task-card { background: white; border-radius: 12px; border-top: 6px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; height: fit-content; }
-        
-        .work-content { padding: 18px; flex-grow: 1; }
-        .work-title { font-size: 1.2em; font-weight: 800; color: #111; text-transform: uppercase; margin-bottom: 8px; }
-        .work-notes { font-size: 0.9em; color: #555; background: #fcfcfc; padding: 10px; border-radius: 8px; border-left: 3px solid #eee; min-height: 30px; }
+        .alert-btn { background: #fff; border: 1px solid #ddd; padding: 8px; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        .tiny-meta { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; padding: 8px 18px; border-top: 1px solid #f9f9f9; }
-        .tiny-meta b { color: #777; }
-
-        .update-panel { padding: 15px 18px; background: #fafafa; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; border-top: 1px solid #f0f0f0; }
-        .update-input { width: 100%; padding: 8px; margin-bottom: 6px; border: 1px solid #eee; border-radius: 6px; font-size: 0.85em; outline: none; }
-        .save-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; transition: 0.2s; }
-        .save-btn:active { transform: scale(0.98); }
-
-        .card-todo { border-top-color: var(--todo); }
-        .card-progress { border-top-color: var(--progress); }
-        .card-done { border-top-color: var(--done); opacity: 0.8; }
-
-        /* Login & Modal */
-        #loginOverlay { position: fixed; inset: 0; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; }
-        
-        .login-box { background: white; padding: 30px; border-radius: 16px; width: 320px; text-align: center; }
-        input:focus, select:focus { border-color: var(--accent) !important; }
+        @media (max-width: 600px) { .drawer-content { max-width: 100%; } }
+        .admin-only { display: none; }
     </style>
 </head>
 <body>
 
-<div id="loginOverlay">
-    <div class="login-box">
-        <h2 style="margin-bottom:15px; letter-spacing: 2px;">URBAN CASA</h2>
-        <input type="text" id="userIn" placeholder="Username" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
-        <input type="password" id="passIn" placeholder="Password" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
-        <button onclick="handleLogin()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Sign In</button>
+<div id="loginOverlay" style="position:fixed; inset:0; background:var(--primary); display:flex; align-items:center; justify-content:center; z-index:11000;">
+    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:350px; text-align:center;">
+        <h2 style="margin-bottom:20px; letter-spacing: 2px;">URBAN CASA</h2>
+        <input type="text" id="userIn" placeholder="Username" class="update-input">
+        <input type="password" id="passIn" placeholder="Password" class="update-input">
+        <button onclick="handleLogin()" class="save-btn" style="background:var(--accent)">Sign In</button>
     </div>
 </div>
 
 <div class="container" id="mainApp">
     <header>
-        <h3 id="welcomeMsg">Dashboard</h3>
         <div>
-            <button class="admin-only" onclick="toggleModal(true)" style="padding:8px 12px; border-radius:6px; border:1px solid #ddd; cursor:pointer; font-weight:600; background:white;">⚙️ Settings</button>
-            <button onclick="logout()" style="margin-left:10px; color:var(--alert); border:none; background:none; cursor:pointer; font-weight:bold;">Logout</button>
+            <h3 id="welcomeMsg" style="font-size: 11px; color: #888;">Dashboard</h3>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-weight:900; font-size: 1.2rem;">WORK ORDERS</span>
+                <span id="taskBadge" class="task-badge">0</span>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="alert-btn" id="notiBell" onclick="enableNotifications()" title="Enable Alerts">🔔</button>
+            <button class="admin-only" onclick="toggleAdminModal(true)" style="border:none; background:none; font-size:1.4rem; cursor:pointer;">⚙️</button>
+            <button onclick="logout()" style="border:none; background:none; color:var(--alert); font-weight:bold; cursor:pointer;">Logout</button>
         </div>
     </header>
 
-    <div class="admin-only" style="background:white; padding:20px; border-radius:12px; margin-bottom:20px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-        <p class="filter-label" style="margin-bottom:10px;">Create New Work Order</p>
-        <form id="taskForm" style="display:flex; flex-wrap:wrap; gap:10px;">
-            <input type="text" id="tTitle" placeholder="What is the work?" required style="flex:2; padding:10px; border:1px solid #ddd; border-radius:6px; min-width:200px;">
-            <select id="tUser" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; min-width:120px;"></select>
-            <input type="datetime-local" id="tDate" required style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; min-width:150px;">
-            <button type="submit" style="padding:10px 20px; background:var(--primary); color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Assign Now</button>
+    <div class="admin-only" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px;">
+        <form id="taskForm" style="display:flex; flex-direction:column; gap:8px;">
+            <input type="text" id="tTitle" placeholder="Work description..." required class="update-input" style="margin:0">
+            <select id="tUser" class="update-input" style="margin:0"></select>
+            <div class="time-box">
+                <input type="datetime-local" id="tDate" required class="update-input" style="margin-bottom:5px;">
+                <div class="shortcut-row">
+                    <button type="button" class="btn-time" onclick="setQuickDate('tDate', 'now')">Now</button>
+                    <button type="button" class="btn-time" onclick="setQuickDate('tDate', 'tomorrow')">Tmr 9AM</button>
+                </div>
+            </div>
+            <button type="submit" class="save-btn">Assign Task</button>
         </form>
     </div>
 
-    <div class="filters-container">
-        <div>
-            <span class="filter-label">Work Status</span>
-            <div class="filter-group" id="statusFilterGroup">
-                <button class="filter-btn active" onclick="setFilter('status', 'all', this)">All Status</button>
-                <button class="filter-btn" onclick="setFilter('status', 'todo', this)">To Do</button>
-                <button class="filter-btn" onclick="setFilter('status', 'progress', this)">Progress</button>
-                <button class="filter-btn" onclick="setFilter('status', 'done', this)">Done</button>
-            </div>
+    <div class="filter-section">
+        <span class="filter-label">Work Status</span>
+        <div class="filter-group" id="statusFilterBar">
+            <button class="filter-btn active" onclick="setFilter('status', 'new', this)">New <span class="filter-count" id="cnt-new">0</span></button>
+            <button class="filter-btn" onclick="setFilter('status', 'in-progress', this)">Progress <span class="filter-count" id="cnt-in-progress">0</span></button>
+            <button class="filter-btn" onclick="setFilter('status', 'pending', this)">Wait <span class="filter-count" id="cnt-pending">0</span></button>
+            <button class="filter-btn" onclick="setFilter('status', 'completed', this)">Done <span class="filter-count" id="cnt-completed">0</span></button>
         </div>
-        <div>
-            <span class="filter-label">Team Member</span>
-            <div class="filter-group" id="teamFilterGroup"></div>
-        </div>
+    </div>
+
+    <div class="filter-section admin-only">
+        <span class="filter-label">Track Staff</span>
+        <div class="filter-group" id="teamFilterBar"></div>
     </div>
 
     <div class="task-board" id="taskBoard"></div>
-</div>
-
-<div class="modal" id="adminModal">
-    <div class="modal-content">
-        <h3 style="margin-bottom:15px;">Admin Control</h3>
-        <div style="margin-bottom:15px; background:#f9f9f9; padding:15px; border-radius:10px;">
-            <p class="filter-label">Add Staff Member</p>
-            <div style="display:flex; gap:5px; margin-top:5px;">
-                <input type="text" id="newStaffName" placeholder="Name" style="width:50%; padding:8px; border:1px solid #ddd; border-radius:5px;">
-                <input type="password" id="newStaffPass" placeholder="Pass" style="width:50%; padding:8px; border:1px solid #ddd; border-radius:5px;">
-            </div>
-            <button onclick="addStaffMember()" style="width:100%; margin-top:10px; padding:10px; background:var(--done); color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Add to Team</button>
-        </div>
-        <p class="filter-label">Existing Team</p>
-        <div id="staffListUI" style="max-height: 120px; overflow-y: auto; font-size: 0.85em; margin-bottom:15px; border: 1px solid #eee; border-radius:8px; padding:5px;"></div>
-        <button onclick="toggleModal(false)" style="width:100%; padding:12px; background:#f0f0f0; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Close Settings</button>
-    </div>
 </div>
 
 <script>
@@ -128,14 +130,56 @@
 
     let currentUser = JSON.parse(localStorage.getItem('casa_session')) || null;
     let allUsers = {};
-    let activeFilters = { status: 'all', team: 'all' };
+    let activeFilters = { status: 'new', team: '' };
 
-    // Initialize User Data
+    // --- ALERT SYSTEM ---
+    function enableNotifications() {
+        if (!("Notification" in window)) {
+            alert("This browser does not support desktop notification");
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    document.getElementById('notiBell').style.borderColor = "var(--status-completed)";
+                    new Notification("URBAN CASA", { body: "Alerts enabled! You will be reminded every 30 mins to update tasks." });
+                }
+            });
+        }
+    }
+
+    // Interval to check every 30 minutes
+    setInterval(() => {
+        if (currentUser) {
+            triggerTeamAlert();
+        }
+    }, 1800000); // 30 minutes in milliseconds
+
+    function triggerTeamAlert() {
+        // Vibrate phone
+        if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200, 100, 200]); // Pulse pattern
+        }
+
+        // Show Notification
+        if (Notification.permission === "granted") {
+            new Notification("TASK UPDATE REMINDER", {
+                body: "It's time to update your active work orders!",
+                icon: "https://cdn-icons-png.flaticon.com/512/552/552810.png"
+            });
+        }
+    }
+
+    // --- APP LOGIC ---
+    function setQuickDate(inputId, type) {
+        const input = document.getElementById(inputId);
+        let date = new Date();
+        if (type === 'tomorrow') { date.setDate(date.getDate() + 1); date.setHours(9, 0, 0, 0); }
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        input.value = date.toISOString().slice(0, 16);
+    }
+
     db.ref('users').on('value', snap => {
         allUsers = snap.val() || {};
-        if (!allUsers.admin) db.ref('users/admin').set({ password: "1234", role: "admin" });
-        renderStaffList();
-        updateDropdowns();
+        updateTeamFilters();
     });
 
     if(currentUser) startApp();
@@ -147,126 +191,84 @@
             currentUser = { name: u, role: allUsers[u].role || 'staff' };
             localStorage.setItem('casa_session', JSON.stringify(currentUser));
             startApp();
-        } else { alert("Login failed: Username or Password incorrect."); }
+        } else { alert("Login failed."); }
     }
-
-    function logout() { localStorage.removeItem('casa_session'); location.reload(); }
 
     function startApp() {
         document.getElementById('loginOverlay').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
-        document.getElementById('welcomeMsg').innerText = "Hello, " + currentUser.name.toUpperCase();
-        if(currentUser.role === 'admin') document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-        syncTasks();
-    }
-
-    function setFilter(type, value, btn) {
-        activeFilters[type] = value;
-        const group = type === 'status' ? 'statusFilterGroup' : 'teamFilterGroup';
-        document.querySelectorAll(`#${group} .filter-btn`).forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        if(Notification.permission === "granted") document.getElementById('notiBell').style.borderColor = "var(--status-completed)";
+        
+        if(currentUser.role === 'admin') {
+            document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+            if(!activeFilters.team) {
+                const firstStaff = Object.keys(allUsers).find(n => n !== 'admin');
+                if(firstStaff) activeFilters.team = firstStaff;
+            }
+        } else {
+            activeFilters.team = currentUser.name;
+        }
         syncTasks();
     }
 
     function syncTasks() {
-        // ERROR FIX: Use .off() to prevent multiple alert popups and data lag
-        db.ref('tasks').off(); 
         db.ref('tasks').on('value', snap => {
-            const tasks = snap.val();
+            const tasks = snap.val() || {};
             const board = document.getElementById('taskBoard');
             board.innerHTML = '';
-            if(!tasks) return;
-            
-            Object.keys(tasks).reverse().forEach(id => {
-                const t = tasks[id];
-                const statusMatch = activeFilters.status === 'all' || t.status === activeFilters.status;
-                const teamMatch = activeFilters.team === 'all' || t.assignee === activeFilters.team;
-                
-                if (statusMatch && teamMatch) {
-                    const isOwner = (currentUser.name.toLowerCase() === t.assignee.toLowerCase() || currentUser.role === 'admin');
-                    const card = document.createElement('div');
-                    card.className = `task-card card-${t.status}`;
-                    card.innerHTML = `
-                        <div class="work-content">
-                            <div class="work-title">${t.title}</div>
-                            <div class="work-notes">${t.notes || 'No work description notes yet.'}</div>
-                        </div>
-                        <div class="tiny-meta">
-                            <span>👤 <b>${t.assignee}</b></span>
-                            <span><b>${t.status}</b></span>
-                            <span>⏰ <b>${new Date(t.date).toLocaleString([], {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</b></span>
-                        </div>
-                        ${isOwner ? `
-                            <div class="update-panel">
-                                <label style="font-size:9px; font-weight:bold; color:#999;">UPDATE DATE & NOTES</label>
-                                <input type="datetime-local" id="date-${id}" class="update-input" value="${t.date}">
-                                <textarea id="note-${id}" class="update-input" style="height:45px; resize:none;" placeholder="Write updates here...">${t.notes || ''}</textarea>
-                                <select id="status-${id}" class="update-input">
-                                    <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
-                                    <option value="progress" ${t.status==='progress'?'selected':''}>Progress</option>
-                                    <option value="done" ${t.status==='done'?'selected':''}>Done</option>
-                                </select>
-                                <button onclick="updateTask('${id}')" class="save-btn">SAVE UPDATE</button>
-                                ${currentUser.role === 'admin' ? `<button onclick="deleteTask('${id}')" style="margin-top:10px; width:100%; background:none; border:none; color:#ddd; font-size:9px; cursor:pointer;">Delete Work Card</button>` : ''}
+            let stats = { new: 0, 'in-progress': 0, pending: 0, completed: 0 };
+            const now = new Date();
+
+            Object.entries(tasks).reverse().forEach(([id, t]) => {
+                if (t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
+                    stats[t.status]++;
+                    if (t.status === activeFilters.status) {
+                        const taskDate = new Date(t.date);
+                        const isOverdue = taskDate < now && t.status !== 'completed';
+                        const card = document.createElement('div');
+                        card.className = `task-card card-${t.status} ${isOverdue ? 'is-overdue' : ''} ${t.status === 'new' ? 'is-new' : ''}`;
+                        card.onclick = () => openDrawer(id, t);
+                        card.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; font-size:11px;">
+                                <span>👤 ${t.assignee}</span>
+                                ${isOverdue ? '<span style="color:var(--alert); font-weight:bold;">⚠️ DELAYED</span>' : ''}
                             </div>
-                        ` : ''}
-                    `;
-                    board.appendChild(card);
+                            <div class="card-title">${t.title}</div>
+                            <div style="font-size:11px; color:#666;">⏰ ${new Date(t.date).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
+                        `;
+                        board.appendChild(card);
+                    }
                 }
             });
+
+            for (let key in stats) {
+                const el = document.getElementById('cnt-' + key);
+                if (el) el.innerText = stats[key];
+            }
+            document.getElementById('taskBadge').innerText = stats.new + stats['in-progress'];
         });
     }
 
-    function updateTask(id) {
-        const d = document.getElementById(`date-${id}`).value;
-        if(!d) return alert("Error: Update Date cannot be blank.");
-        db.ref('tasks/' + id).update({
-            date: d, notes: document.getElementById(`note-${id}`).value, status: document.getElementById(`status-${id}`).value
-        }).then(() => alert("Work Updated Successfully!"));
+    function logout() { localStorage.removeItem('casa_session'); location.reload(); }
+    function setFilter(type, val, btn) {
+        activeFilters[type] = val;
+        const selector = type === 'status' ? '#statusFilterBar .filter-btn' : '#teamFilterBar .filter-btn';
+        document.querySelectorAll(selector).forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        syncTasks();
     }
-
-    function deleteTask(id) { if(confirm("Permanently delete this work card?")) db.ref('tasks/' + id).remove(); }
-    function toggleModal(show) { document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; }
-
-    function updateDropdowns() {
-        const names = Object.keys(allUsers);
-        document.getElementById('tUser').innerHTML = names.map(u => `<option value="${u}">${u}</option>`).join('');
-        
-        const teamFilterGroup = document.getElementById('teamFilterGroup');
-        const currentActive = activeFilters.team;
-        teamFilterGroup.innerHTML = `<button class="filter-btn ${currentActive === 'all' ? 'active' : ''}" onclick="setFilter('team', 'all', this)">All Team</button>` + 
-            names.map(u => `<button class="filter-btn ${currentActive === u ? 'active' : ''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`).join('');
-    }
-
-    function addStaffMember() {
-        const n = document.getElementById('newStaffName').value.toLowerCase().trim();
-        const p = document.getElementById('newStaffPass').value;
-        if(n && p) {
-            db.ref('users/' + n).set({ password: p, role: 'staff' });
-            document.getElementById('newStaffName').value = ''; document.getElementById('newStaffPass').value = '';
-            alert("Team member added!");
-        } else { alert("Please fill both name and password."); }
-    }
-
-    function renderStaffList() {
-        document.getElementById('staffListUI').innerHTML = Object.keys(allUsers).map(u => `
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:6px 0;">
-                <span>${u} (${allUsers[u].password})</span>
-                ${u !== 'admin' ? `<button onclick="db.ref('users/${u}').remove()" style="color:red; border:none; background:none; cursor:pointer;">Remove</button>` : ''}
-            </div>
-        `).join('');
-    }
-
-    document.getElementById('taskForm').onsubmit = (e) => {
-        e.preventDefault();
-        db.ref('tasks').push({ 
-            title: document.getElementById('tTitle').value, 
-            assignee: document.getElementById('tUser').value, 
-            date: document.getElementById('tDate').value, 
-            status: 'todo', notes: '' 
+    function updateTeamFilters() {
+        const list = Object.keys(allUsers).filter(n => n !== 'admin');
+        document.getElementById('tUser').innerHTML = list.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join('');
+        const teamFilterBar = document.getElementById('teamFilterBar');
+        teamFilterBar.innerHTML = '';
+        list.forEach((u, index) => {
+            const isActive = activeFilters.team === u || (!activeFilters.team && index === 0);
+            if(isActive) activeFilters.team = u;
+            teamFilterBar.innerHTML += `<button class="filter-btn ${isActive?'active':''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`;
         });
-        e.target.reset();
-    };
+        syncTasks();
+    }
 </script>
 </body>
 </html>
