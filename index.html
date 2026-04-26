@@ -20,15 +20,13 @@
         header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .task-badge { background: var(--alert); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
 
-        /* Blinking Animations */
+        /* Animations */
         @keyframes blink-red { 0% { box-shadow: 0 0 0px var(--alert); } 50% { box-shadow: 0 0 15px var(--alert); border-color: var(--alert); } 100% { box-shadow: 0 0 0px var(--alert); } }
-        @keyframes blink-blue { 0% { opacity: 1; } 50% { opacity: 0.6; transform: scale(1.01); } 100% { opacity: 1; } }
         .is-overdue { animation: blink-red 2s infinite ease-in-out; border-left: 8px solid var(--alert) !important; }
-        .is-new { animation: blink-blue 3s infinite ease-in-out; }
 
         .time-box { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
         .shortcut-row { display: flex; gap: 5px; margin-top: 8px; }
-        .btn-time { flex: 1; padding: 6px; font-size: 10px; font-weight: bold; background: #f0f2f5; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; text-transform: uppercase; }
+        .btn-time { flex: 1; padding: 8px; font-size: 10px; font-weight: bold; background: #f0f2f5; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; text-transform: uppercase; }
 
         .task-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .task-card { background: white; border-radius: 12px; border-left: 6px solid #ccc; padding: 15px; cursor: pointer; transition: 0.2s; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
@@ -39,13 +37,16 @@
         .card-completed { border-left-color: var(--status-completed); opacity: 0.6; }
 
         .card-title { font-weight: 800; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 5px; color: #333; }
-        .card-assignee { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
         
+        /* Drawer & Modals */
         .drawer, .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: flex-end; }
         .modal { justify-content: center; align-items: center; }
         .drawer-content { background: white; width: 100%; max-width: 500px; height: 100%; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; }
         .modal-content { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 16px; position: relative; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .history-item { position: relative; padding-left: 20px; border-left: 2px solid #eee; margin-bottom: 15px; font-size: 13px; }
+        .history-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
 
         .update-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: white; }
         .save-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -57,9 +58,7 @@
         .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .filter-count { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px; margin-left: 5px; font-size: 9px; }
 
-        .alert-btn { background: #fff; border: 1px solid #ddd; padding: 8px; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-        @media (max-width: 600px) { .drawer-content { max-width: 100%; } }
+        .noti-btn { background: #fff; border: 1px solid #ddd; padding: 8px; border-radius: 50%; cursor: pointer; }
         .admin-only { display: none; }
     </style>
 </head>
@@ -67,7 +66,7 @@
 
 <div id="loginOverlay" style="position:fixed; inset:0; background:var(--primary); display:flex; align-items:center; justify-content:center; z-index:11000;">
     <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:350px; text-align:center;">
-        <h2 style="margin-bottom:20px; letter-spacing: 2px;">URBAN CASA</h2>
+        <h2 style="margin-bottom:20px;">URBAN CASA</h2>
         <input type="text" id="userIn" placeholder="Username" class="update-input">
         <input type="password" id="passIn" placeholder="Password" class="update-input">
         <button onclick="handleLogin()" class="save-btn" style="background:var(--accent)">Sign In</button>
@@ -77,14 +76,14 @@
 <div class="container" id="mainApp">
     <header>
         <div>
-            <h3 id="welcomeMsg" style="font-size: 11px; color: #888;">Dashboard</h3>
+            <h3 id="welcomeMsg" style="font-size: 11px; color: #888;">...</h3>
             <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-weight:900; font-size: 1.2rem;">WORK ORDERS</span>
                 <span id="taskBadge" class="task-badge">0</span>
             </div>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
-            <button class="alert-btn" id="notiBell" onclick="enableNotifications()" title="Enable Alerts">🔔</button>
+            <button class="noti-btn" id="notiBell" onclick="enableNotifications()">🔔</button>
             <button class="admin-only" onclick="toggleAdminModal(true)" style="border:none; background:none; font-size:1.4rem; cursor:pointer;">⚙️</button>
             <button onclick="logout()" style="border:none; background:none; color:var(--alert); font-weight:bold; cursor:pointer;">Logout</button>
         </div>
@@ -123,6 +122,47 @@
     <div class="task-board" id="taskBoard"></div>
 </div>
 
+<div class="drawer" id="taskDrawer" onclick="closeDrawer(event)">
+    <div class="drawer-content" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:space-between;">
+            <h2 id="dTitle" style="text-transform:uppercase; font-weight:900;">Title</h2>
+            <button onclick="document.getElementById('taskDrawer').style.display='none'" style="border:none; background:none; font-size:20px;">✕</button>
+        </div>
+        <p id="dMeta" style="font-size:12px; color:#888; margin-bottom:15px;"></p>
+        <div class="history-container" id="dHistory" style="flex:1; overflow-y:auto; margin-bottom:15px;"></div>
+        
+        <div style="background:#f9f9f9; padding:15px; border-radius:12px;">
+            <textarea id="dNoteInput" class="update-input" style="height:80px;" placeholder="Add update note..."></textarea>
+            <div class="time-box">
+                <select id="dStatusInput" class="update-input" style="margin-bottom:8px;">
+                    <option value="new">New</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <input type="datetime-local" id="dDateInput" class="update-input" style="margin:0;">
+                <div class="shortcut-row">
+                    <button type="button" class="btn-time" onclick="setQuickDate('dDateInput', 'now')">Now</button>
+                    <button type="button" class="btn-time" onclick="setQuickDate('dDateInput', 'plus2')">+2 Hrs</button>
+                </div>
+            </div>
+            <button id="dSaveBtn" class="save-btn" style="background:var(--accent)">Save Update</button>
+            <div id="adminDeleteArea"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="adminModal" onclick="toggleAdminModal(false)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h3>Settings</h3>
+        <input type="text" id="newStaffName" placeholder="Staff Name" class="update-input" style="margin-top:10px;">
+        <input type="password" id="newStaffPass" placeholder="Password" class="update-input">
+        <button onclick="addStaffMember()" class="save-btn" style="padding:10px;">Add Staff</button>
+        <div id="staffListUI" style="margin-top:15px; max-height:150px; overflow-y:auto;"></div>
+        <button onclick="toggleAdminModal(false)" class="save-btn" style="background:#eee; color:#333; margin-top:10px;">Close</button>
+    </div>
+</div>
+
 <script>
     const firebaseConfig = { databaseURL: "https://task-76764-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
@@ -132,54 +172,26 @@
     let allUsers = {};
     let activeFilters = { status: 'new', team: '' };
 
-    // --- ALERT SYSTEM ---
-    function enableNotifications() {
-        if (!("Notification" in window)) {
-            alert("This browser does not support desktop notification");
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    document.getElementById('notiBell').style.borderColor = "var(--status-completed)";
-                    new Notification("URBAN CASA", { body: "Alerts enabled! You will be reminded every 30 mins to update tasks." });
-                }
-            });
-        }
+    function getNowISO() {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16);
     }
 
-    // Interval to check every 30 minutes
-    setInterval(() => {
-        if (currentUser) {
-            triggerTeamAlert();
-        }
-    }, 1800000); // 30 minutes in milliseconds
-
-    function triggerTeamAlert() {
-        // Vibrate phone
-        if (navigator.vibrate) {
-            navigator.vibrate([200, 100, 200, 100, 200]); // Pulse pattern
-        }
-
-        // Show Notification
-        if (Notification.permission === "granted") {
-            new Notification("TASK UPDATE REMINDER", {
-                body: "It's time to update your active work orders!",
-                icon: "https://cdn-icons-png.flaticon.com/512/552/552810.png"
-            });
-        }
-    }
-
-    // --- APP LOGIC ---
     function setQuickDate(inputId, type) {
         const input = document.getElementById(inputId);
         let date = new Date();
-        if (type === 'tomorrow') { date.setDate(date.getDate() + 1); date.setHours(9, 0, 0, 0); }
+        if (type === 'tomorrow') { date.setDate(date.getDate() + 1); date.setHours(9,0,0,0); }
+        if (type === 'plus2') { date.setHours(date.getHours() + 2); }
         date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
         input.value = date.toISOString().slice(0, 16);
     }
 
+    // AUTH & STARTUP
     db.ref('users').on('value', snap => {
         allUsers = snap.val() || {};
         updateTeamFilters();
+        renderStaffList();
     });
 
     if(currentUser) startApp();
@@ -197,7 +209,7 @@
     function startApp() {
         document.getElementById('loginOverlay').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
-        if(Notification.permission === "granted") document.getElementById('notiBell').style.borderColor = "var(--status-completed)";
+        document.getElementById('welcomeMsg').innerText = "Logged as: " + currentUser.name.toUpperCase();
         
         if(currentUser.role === 'admin') {
             document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
@@ -205,12 +217,11 @@
                 const firstStaff = Object.keys(allUsers).find(n => n !== 'admin');
                 if(firstStaff) activeFilters.team = firstStaff;
             }
-        } else {
-            activeFilters.team = currentUser.name;
-        }
+        } else { activeFilters.team = currentUser.name; }
         syncTasks();
     }
 
+    // MAIN TASK SYNC
     function syncTasks() {
         db.ref('tasks').on('value', snap => {
             const tasks = snap.val() || {};
@@ -223,15 +234,14 @@
                 if (t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
                     stats[t.status]++;
                     if (t.status === activeFilters.status) {
-                        const taskDate = new Date(t.date);
-                        const isOverdue = taskDate < now && t.status !== 'completed';
+                        const isOverdue = new Date(t.date) < now && t.status !== 'completed';
                         const card = document.createElement('div');
-                        card.className = `task-card card-${t.status} ${isOverdue ? 'is-overdue' : ''} ${t.status === 'new' ? 'is-new' : ''}`;
+                        card.className = `task-card card-${t.status} ${isOverdue ? 'is-overdue' : ''}`;
                         card.onclick = () => openDrawer(id, t);
                         card.innerHTML = `
-                            <div style="display:flex; justify-content:space-between; font-size:11px;">
-                                <span>👤 ${t.assignee}</span>
-                                ${isOverdue ? '<span style="color:var(--alert); font-weight:bold;">⚠️ DELAYED</span>' : ''}
+                            <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:5px;">
+                                <span>👤 ${t.assignee.toUpperCase()}</span>
+                                ${isOverdue ? '<span style="color:var(--alert); font-weight:bold;">DELAYED</span>' : ''}
                             </div>
                             <div class="card-title">${t.title}</div>
                             <div style="font-size:11px; color:#666;">⏰ ${new Date(t.date).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
@@ -240,35 +250,116 @@
                     }
                 }
             });
-
-            for (let key in stats) {
-                const el = document.getElementById('cnt-' + key);
-                if (el) el.innerText = stats[key];
-            }
+            for (let key in stats) { if (document.getElementById('cnt-' + key)) document.getElementById('cnt-' + key).innerText = stats[key]; }
             document.getElementById('taskBadge').innerText = stats.new + stats['in-progress'];
         });
     }
 
+    // DRAWER LOGIC (FIXED)
+    function openDrawer(id, t) {
+        const drw = document.getElementById('taskDrawer');
+        drw.style.display = 'flex';
+        document.getElementById('dTitle').innerText = t.title;
+        document.getElementById('dMeta').innerText = "Assignee: " + t.assignee.toUpperCase();
+        document.getElementById('dStatusInput').value = t.status;
+        document.getElementById('dDateInput').value = t.date || getNowISO();
+        document.getElementById('dNoteInput').value = '';
+        
+        const historyBox = document.getElementById('dHistory');
+        historyBox.innerHTML = '<p class="filter-label">Activity Log</p>';
+        (t.history || []).slice().reverse().forEach(item => {
+            historyBox.innerHTML += `<div class="history-item">
+                <span style="font-weight:bold;">${item.user.toUpperCase()}</span>
+                <span style="font-size:10px; color:#999; margin-left:10px;">${new Date(item.date).toLocaleTimeString()}</span>
+                <p>${item.text}</p>
+            </div>`;
+        });
+
+        document.getElementById('dSaveBtn').onclick = () => {
+            const note = document.getElementById('dNoteInput').value.trim();
+            const status = document.getElementById('dStatusInput').value;
+            const date = document.getElementById('dDateInput').value;
+            let hist = t.history || [];
+            if(note) hist.push({ text: note, user: currentUser.name, date: Date.now() });
+            db.ref('tasks/' + id).update({ status, date, history: hist }).then(() => drw.style.display = 'none');
+        };
+
+        const delArea = document.getElementById('adminDeleteArea');
+        delArea.innerHTML = currentUser.role === 'admin' ? `<button onclick="deleteTask('${id}')" style="color:var(--alert); border:none; background:none; font-size:11px; width:100%; margin-top:10px; cursor:pointer;">DELETE TASK</button>` : '';
+    }
+
+    // SETTINGS LOGIC
+    function toggleAdminModal(show) { document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; }
+    
+    function addStaffMember() {
+        const n = document.getElementById('newStaffName').value.toLowerCase().trim();
+        const p = document.getElementById('newStaffPass').value;
+        if(n && p) {
+            db.ref('users/' + n).set({ password: p, role: 'staff' });
+            document.getElementById('newStaffName').value = '';
+            document.getElementById('newStaffPass').value = '';
+        }
+    }
+
+    function renderStaffList() {
+        const ui = document.getElementById('staffListUI');
+        ui.innerHTML = Object.keys(allUsers).map(u => `
+            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; font-size:12px;">
+                <span>${u.toUpperCase()}</span>
+                ${u !== 'admin' ? `<button onclick="db.ref('users/${u}').remove()" style="color:var(--alert); border:none; background:none;">Remove</button>` : ''}
+            </div>
+        `).join('');
+    }
+
+    // REMINDERS
+    function enableNotifications() {
+        Notification.requestPermission().then(perm => {
+            if(perm === 'granted') {
+                document.getElementById('notiBell').style.background = 'var(--status-completed)';
+                new Notification("Urban Casa", { body: "Reminders active. Every 30 mins." });
+            }
+        });
+    }
+
+    setInterval(() => {
+        if(currentUser && Notification.permission === 'granted') {
+            if(navigator.vibrate) navigator.vibrate([300, 100, 300]);
+            new Notification("Update Required", { body: "Please check and update your active work orders." });
+        }
+    }, 1800000);
+
+    // HELPERS
     function logout() { localStorage.removeItem('casa_session'); location.reload(); }
+    function closeDrawer(e) { if(e.target.id === 'taskDrawer') e.target.style.display = 'none'; }
+    function deleteTask(id) { if(confirm("Delete this task?")) { db.ref('tasks/' + id).remove(); document.getElementById('taskDrawer').style.display = 'none'; }}
     function setFilter(type, val, btn) {
         activeFilters[type] = val;
-        const selector = type === 'status' ? '#statusFilterBar .filter-btn' : '#teamFilterBar .filter-btn';
-        document.querySelectorAll(selector).forEach(b => b.classList.remove('active'));
+        document.querySelectorAll(type === 'status' ? '#statusFilterBar .filter-btn' : '#teamFilterBar .filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         syncTasks();
     }
     function updateTeamFilters() {
         const list = Object.keys(allUsers).filter(n => n !== 'admin');
         document.getElementById('tUser').innerHTML = list.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join('');
-        const teamFilterBar = document.getElementById('teamFilterBar');
-        teamFilterBar.innerHTML = '';
-        list.forEach((u, index) => {
-            const isActive = activeFilters.team === u || (!activeFilters.team && index === 0);
-            if(isActive) activeFilters.team = u;
-            teamFilterBar.innerHTML += `<button class="filter-btn ${isActive?'active':''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`;
+        const bar = document.getElementById('teamFilterBar');
+        bar.innerHTML = '';
+        list.forEach((u, i) => {
+            const act = activeFilters.team === u || (!activeFilters.team && i === 0);
+            if(act) activeFilters.team = u;
+            bar.innerHTML += `<button class="filter-btn ${act?'active':''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`;
         });
         syncTasks();
     }
+
+    document.getElementById('taskForm').onsubmit = (e) => {
+        e.preventDefault();
+        db.ref('tasks').push({ 
+            title: document.getElementById('tTitle').value, assignee: document.getElementById('tUser').value, 
+            date: document.getElementById('tDate').value, status: 'new',
+            history: [{ text: "Task created.", user: currentUser.name, date: Date.now() }]
+        });
+        e.target.reset(); setQuickDate('tDate', 'now');
+    };
 </script>
 </body>
 </html>
