@@ -27,6 +27,16 @@
         @keyframes blink-red { 0% { box-shadow: 0 0 0px var(--alert); } 50% { box-shadow: 0 0 15px var(--alert); border-color: var(--alert); } 100% { box-shadow: 0 0 0px var(--alert); } }
         .is-overdue { animation: blink-red 2s infinite ease-in-out; border-left: 8px solid var(--alert) !important; }
 
+        /* Rapid Blink for DMs */
+        @keyframes rapidBlink {
+            0% { transform: scale(1); background-color: var(--alert); box-shadow: 0 0 0px var(--alert); }
+            100% { transform: scale(1.5); background-color: #ff0000; box-shadow: 0 0 12px #ff0000; }
+        }
+        .rapid-blink {
+            display: block !important;
+            animation: rapidBlink 0.3s infinite alternate;
+        }
+
         /* Priority Badges */
         .pri-tag { font-size: 9px; padding: 3px 6px; border-radius: 4px; color: white; font-weight: 900; text-transform: uppercase; margin-left: 5px; }
         .tag-urgent { background: var(--pri-urgent); animation: pulse 1.5s infinite; }
@@ -40,7 +50,6 @@
 
         /* KANBAN BOARD STYLES */
         .kanban-board { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; align-items: flex-start; scroll-behavior: smooth; }
-        /* Hide scrollbar for a cleaner mobile look */
         .kanban-board::-webkit-scrollbar { height: 6px; }
         .kanban-board::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
         
@@ -76,35 +85,22 @@
         .filter-btn { padding: 10px 18px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.3s; }
         .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         
+        .noti-wrapper { position: relative; display: inline-block; }
         .noti-btn { background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; }
+        .badge-dot { position: absolute; top: -2px; right: -2px; background: var(--alert); width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; display: none; }
+        
         .admin-only { display: none; }
 
-        /* ==========================================
-           MOBILE RESPONSIVE OVERRIDES 
-           ========================================== */
+        /* MOBILE RESPONSIVE OVERRIDES */
         @media (max-width: 768px) {
             header { flex-direction: column; align-items: flex-start; gap: 15px; }
             .header-actions { width: 100%; justify-content: space-between; border-top: 1px solid #eee; padding-top: 10px; }
-            
-            /* Snap Scrolling for Kanban Columns */
             .kanban-board { scroll-snap-type: x mandatory; gap: 10px; padding: 0 5px 20px 5px; }
             .kanban-col { min-width: 85vw; width: 85vw; scroll-snap-align: center; }
-            
-            /* Bottom Sheet Drawer for Mobile */
             .drawer { align-items: flex-end; justify-content: center; }
-            .drawer-content { 
-                height: 90vh; 
-                max-width: 100%; 
-                border-radius: 24px 24px 0 0; 
-                padding: 20px 15px;
-                animation: slideUp 0.3s ease; 
-            }
+            .drawer-content { height: 90vh; max-width: 100%; border-radius: 24px 24px 0 0; padding: 20px 15px; animation: slideUp 0.3s ease; }
             @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-            /* Make Inputs & Buttons larger for touch targets */
             .update-input, .save-btn { padding: 16px; font-size: 15px; }
-            
-            /* Admin Form Stacking */
             #taskForm > div { flex-direction: column; }
         }
     </style>
@@ -130,6 +126,12 @@
             </div>
         </div>
         <div class="header-actions">
+            <!-- Messages Icon -->
+            <div class="noti-wrapper">
+                <button class="noti-btn" onclick="toggleMsgModal(true)">💬</button>
+                <div class="badge-dot" id="msgBadge"></div>
+            </div>
+            
             <button class="noti-btn" id="notiBell" onclick="enableNotifications()">🔔</button>
             <button class="admin-only" onclick="toggleAdminModal(true)" style="border:none; background:none; font-size:1.6rem; cursor:pointer;">⚙️</button>
             <button onclick="logout()" style="border:none; background:none; color:var(--alert); font-weight:bold; font-size:1rem; cursor:pointer;">Logout</button>
@@ -188,15 +190,12 @@
 <!-- Task Drawer -->
 <div class="drawer" id="taskDrawer" onclick="closeDrawer(event)">
     <div class="drawer-content" onclick="event.stopPropagation()">
-        <!-- Handlebar for mobile visual cue -->
         <div style="width: 40px; height: 5px; background: #ddd; border-radius: 5px; margin: 0 auto 15px auto;"></div>
-        
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <h2 id="dTitle" style="text-transform:uppercase; font-weight:900; font-size:1.4rem; line-height:1.2; margin-bottom:5px;">Title</h2>
             <button onclick="document.getElementById('taskDrawer').style.display='none'" style="border:none; background:none; font-size:24px; cursor:pointer;">✕</button>
         </div>
         <p id="dMeta" style="font-size:13px; color:#888; margin-bottom:15px; font-weight:bold;"></p>
-        
         <div class="history-container" id="dHistory" style="flex:1; overflow-y:auto; margin-bottom:15px; padding-right:10px;"></div>
         
         <div style="background:#f9f9f9; padding:15px; border-radius:12px; margin-bottom: 20px;">
@@ -225,6 +224,30 @@
     </div>
 </div>
 
+<!-- Personal DM Modal -->
+<div class="modal" id="msgModal" onclick="toggleMsgModal(false)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="display:flex; flex-direction:column; height:85vh; max-height:700px; padding: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; font-size:1.1rem;">Direct Messages</h3>
+            <button onclick="toggleMsgModal(false)" style="border:none; background:none; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        
+        <!-- User Selection Dropdown -->
+        <select id="chatUserSelect" class="update-input" style="margin-bottom:15px; font-weight:bold; background:#f0f2f5;" onchange="loadActiveChat()">
+            <!-- Dynamic Options -->
+        </select>
+        
+        <div id="msgListUI" style="flex:1; overflow-y:auto; margin-bottom:15px; display:flex; flex-direction:column; gap:10px; padding-right:5px; background:#f9f9f9; padding:10px; border-radius:12px; border:1px solid #eee;">
+            <!-- Messages load here -->
+        </div>
+        
+        <div style="display:flex; gap:8px; margin-top: auto;">
+            <input type="text" id="newMsgText" placeholder="Type a message..." class="update-input" style="margin:0; flex:1;">
+            <button onclick="sendPrivateMessage()" class="save-btn" style="width:auto; padding:0 20px; background:var(--accent);">Send</button>
+        </div>
+    </div>
+</div>
+
 <!-- Admin Settings Modal -->
 <div class="modal" id="adminModal" onclick="toggleAdminModal(false)">
     <div class="modal-content" onclick="event.stopPropagation()">
@@ -232,9 +255,7 @@
         <input type="text" id="newStaffName" placeholder="New Staff Name" class="update-input" style="margin-top:15px;">
         <input type="password" id="newStaffPass" placeholder="New Password" class="update-input">
         <button onclick="addStaffMember()" class="save-btn" style="margin-bottom:15px;">Add Staff Member</button>
-        
         <div id="staffListUI" style="max-height:300px; overflow-y:auto; margin-bottom:15px;"></div>
-        
         <button onclick="toggleAdminModal(false)" class="save-btn" style="background:#eee; color:#333;">Close</button>
     </div>
 </div>
@@ -250,6 +271,10 @@
     let activeFilters = { team: '' }; 
     let initialLoad = true;
     let knownTasks = new Set();
+    
+    // Messaging Variables
+    let activeChatPartner = '';
+    let currentChatRef = null;
 
     function getNowISO() {
         const now = new Date();
@@ -269,6 +294,7 @@
     db.ref('users').on('value', snap => {
         allUsers = snap.val() || {};
         updateTeamFilters();
+        updateChatUserList();
         renderStaffList();
     });
 
@@ -296,9 +322,160 @@
                 if(firstStaff) activeFilters.team = firstStaff;
             }
         } else { activeFilters.team = currentUser.name; }
+        
         syncTasks();
+        listenForUnreadMessages();
     }
 
+    // --- 1-ON-1 DIRECT MESSAGING LOGIC ---
+    
+    // Builds a unique Chat ID based on the two users talking
+    function getChatId(user1, user2) {
+        return [user1, user2].sort().join('_');
+    }
+
+    // Populates the dropdown in the chat window with all OTHER users
+    function updateChatUserList() {
+        const sel = document.getElementById('chatUserSelect');
+        const currentSelection = sel.value; // Remember what they had selected
+        sel.innerHTML = '';
+        
+        Object.keys(allUsers).forEach(u => {
+            if (u !== currentUser.name) {
+                sel.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`;
+            }
+        });
+
+        // Restore selection or default to first
+        if(currentSelection && allUsers[currentSelection]) {
+            sel.value = currentSelection;
+            activeChatPartner = currentSelection;
+        } else if (sel.options.length > 0) {
+            activeChatPartner = sel.options[0].value;
+        }
+    }
+
+    // Loads the specific conversation between Me and Selected Partner
+    function loadActiveChat() {
+        activeChatPartner = document.getElementById('chatUserSelect').value;
+        if (!activeChatPartner) return;
+
+        const chatId = getChatId(currentUser.name, activeChatPartner);
+        
+        // Immediately mark messages from this person as "Read"
+        db.ref(`unread/${currentUser.name}/${activeChatPartner}`).set(false);
+
+        // Turn off previous chat listener
+        if(currentChatRef) currentChatRef.off(); 
+        
+        currentChatRef = db.ref(`direct_messages/${chatId}`).orderByChild('timestamp').limitToLast(50);
+        currentChatRef.on('value', snap => {
+            const msgs = snap.val() || {};
+            const list = document.getElementById('msgListUI');
+            list.innerHTML = '';
+            
+            const sortedMsgs = Object.values(msgs).sort((a,b) => a.timestamp - b.timestamp);
+            
+            if(sortedMsgs.length === 0) {
+                list.innerHTML = `<div style="text-align:center; color:#999; font-size:12px; margin-top:20px;">No messages yet. Say hello to ${activeChatPartner.toUpperCase()}!</div>`;
+            }
+
+            sortedMsgs.forEach(m => {
+                const isMe = m.sender === currentUser.name;
+                list.innerHTML += `
+                    <div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? 'var(--accent)' : '#e3e6e8'}; color: ${isMe ? 'white' : '#333'}; padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 13px; line-height: 1.4;">
+                        <div style="font-size: 9px; font-weight: 800; opacity: 0.7; margin-bottom: 4px;">${m.sender.toUpperCase()} • ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                        <div>${m.text}</div>
+                    </div>
+                `;
+            });
+            
+            // Auto scroll to bottom
+            list.scrollTop = list.scrollHeight;
+        });
+    }
+
+    // Sends a message specifically to the selected partner
+    function sendPrivateMessage() {
+        const input = document.getElementById('newMsgText');
+        const text = input.value.trim();
+        if (!text || !activeChatPartner) return;
+        
+        const chatId = getChatId(currentUser.name, activeChatPartner);
+        
+        // Push message to the shared conversation node
+        db.ref(`direct_messages/${chatId}`).push({
+            text: text,
+            sender: currentUser.name,
+            timestamp: Date.now()
+        });
+        
+        // Trigger the red blinker for the RECEIVER
+        db.ref(`unread/${activeChatPartner}/${currentUser.name}`).set(true);
+        
+        input.value = '';
+    }
+
+    // Send on Enter
+    document.getElementById('newMsgText').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendPrivateMessage();
+    });
+
+    // Listens for ANY incoming unread messages to trigger the Rapid Blinker
+    function listenForUnreadMessages() {
+        db.ref(`unread/${currentUser.name}`).on('value', snap => {
+            const unreads = snap.val() || {};
+            let hasUnread = false;
+            
+            const select = document.getElementById('chatUserSelect');
+            
+            // 1. Reset all dropdown names back to normal
+            Array.from(select.options).forEach(opt => {
+                opt.text = opt.value.toUpperCase(); 
+            });
+
+            // 2. Loop through my unread alerts
+            for (let sender in unreads) {
+                if (unreads[sender] === true) {
+                    hasUnread = true;
+                    // Add a Red Dot next to the sender's name in the dropdown
+                    Array.from(select.options).forEach(opt => {
+                        if(opt.value === sender) {
+                            opt.text = `🔴 ${opt.value.toUpperCase()} (New)`;
+                        }
+                    });
+                }
+            }
+            
+            // 3. Toggle Rapid Blinking System
+            const badge = document.getElementById('msgBadge');
+            if (hasUnread) {
+                badge.classList.add('rapid-blink');
+                
+                // Optional: Browser Notification if backgrounded
+                if (Notification.permission === 'granted' && document.visibilityState !== 'visible') {
+                    new Notification("💬 New Message", { body: "You have a new direct message." });
+                }
+            } else {
+                badge.classList.remove('rapid-blink');
+                badge.style.display = 'none'; // hide when empty
+            }
+            
+            // 4. If the chat is currently OPEN with the person who just messaged us, mark it as read immediately
+            if (document.getElementById('msgModal').style.display === 'flex' && unreads[activeChatPartner] === true) {
+                db.ref(`unread/${currentUser.name}/${activeChatPartner}`).set(false);
+            }
+        });
+    }
+
+    function toggleMsgModal(show) {
+        document.getElementById('msgModal').style.display = show ? 'flex' : 'none';
+        if (show) {
+            loadActiveChat();
+        }
+    }
+
+    // --- KANBAN & TASKS LOGIC ---
     function syncTasks() {
         db.ref('tasks').on('value', snap => {
             const tasks = snap.val() || {};
@@ -312,16 +489,11 @@
             const now = new Date();
             const priorityOrder = { 'Urgent': 1, 'Moderate': 2, 'Upcoming': 3 };
 
-            // NEW SORT LOGIC: Priority first, then Newest Added
             const sortedTasks = Object.entries(tasks).sort((a, b) => {
                 const pA = priorityOrder[a[1].priority] || 3;
                 const pB = priorityOrder[b[1].priority] || 3;
-                
-                if (pA !== pB) {
-                    return pA - pB; 
-                } else {
-                    return b[0].localeCompare(a[0]); // Sorts descending chronological order
-                }
+                if (pA !== pB) return pA - pB; 
+                else return b[0].localeCompare(a[0]);
             });
 
             sortedTasks.forEach(([id, t]) => {
@@ -334,7 +506,6 @@
 
                 if (t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
                     stats[t.status] = (stats[t.status] || 0) + 1;
-                    
                     const isOverdue = new Date(t.date) < now && t.status !== 'completed';
                     const priClass = (t.priority || 'upcoming').toLowerCase();
                     
@@ -372,12 +543,10 @@
 
     function allowDrop(ev) { ev.preventDefault(); }
     function drag(ev, id) { ev.dataTransfer.setData("taskId", id); }
-
     function drop(ev) {
         ev.preventDefault();
         const id = ev.dataTransfer.getData("taskId");
         const dropzone = ev.target.closest('.kanban-col');
-        
         if (dropzone && id) {
             const newStatus = dropzone.getAttribute('data-status');
             db.ref('tasks/' + id).once('value').then(snap => {
@@ -426,7 +595,6 @@
     }
 
     function toggleAdminModal(show) { document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; }
-    
     function addStaffMember() {
         const n = document.getElementById('newStaffName').value.toLowerCase().trim();
         const p = document.getElementById('newStaffPass').value;
@@ -468,7 +636,7 @@
         Notification.requestPermission().then(perm => {
             if(perm === 'granted') {
                 document.getElementById('notiBell').style.background = 'var(--status-completed)';
-                new Notification("Urban Casa", { body: "Urgent Alerts active. Note: Browser must remain open to receive." });
+                new Notification("Urban Casa", { body: "Alerts active." });
             }
         });
     }
@@ -507,7 +675,6 @@
             status: 'new',
             history: [{ text: "Task created.", user: currentUser.name, date: Date.now() }]
         });
-        // Clear only the title, keep the assignee and priority
         document.getElementById('tTitle').value = ''; 
         setQuickDate('tDate', 'now');
     };
