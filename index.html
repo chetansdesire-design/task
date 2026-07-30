@@ -27,7 +27,7 @@
         @keyframes blink-red { 0% { box-shadow: 0 0 0px var(--alert); } 50% { box-shadow: 0 0 15px var(--alert); border-color: var(--alert); } 100% { box-shadow: 0 0 0px var(--alert); } }
         .is-overdue { animation: blink-red 2s infinite ease-in-out; border-left: 8px solid var(--alert) !important; }
 
-        /* Rapid Blink for DMs */
+        /* Rapid Blink for DMs & Recording */
         @keyframes rapidBlink {
             0% { transform: scale(1); background-color: var(--alert); box-shadow: 0 0 0px var(--alert); }
             100% { transform: scale(1.5); background-color: #ff0000; box-shadow: 0 0 12px #ff0000; }
@@ -88,6 +88,14 @@
         
         .admin-only { display: none; }
 
+        /* Search Bar styling */
+        .search-container { display: flex; gap: 8px; margin-bottom: 15px; }
+        .search-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; }
+
+        /* Recording Button Styling */
+        .record-btn { background: var(--bg); border: 1px solid #ddd; border-radius: 8px; width: 60px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: 0.3s; }
+        .record-btn.recording { background: var(--alert); color: white; border-color: var(--alert); animation: pulse 1s infinite; }
+
         /* MOBILE RESPONSIVE OVERRIDES */
         @media (max-width: 768px) {
             header { flex-direction: column; align-items: flex-start; gap: 15px; }
@@ -129,12 +137,12 @@
             </div>
             
             <button class="noti-btn" id="notiBell" onclick="enableNotifications()">🔔</button>
-            <button class="admin-only" onclick="toggleAdminModal(true)" style="border:none; background:none; font-size:1.6rem; cursor:pointer;">⚙️</button>
+            <button class="admin-only" id="settingsBtn" onclick="toggleAdminModal(true)" style="border:none; background:none; font-size:1.6rem; cursor:pointer;">⚙️</button>
             <button onclick="logout()" style="border:none; background:none; color:var(--alert); font-weight:bold; font-size:1rem; cursor:pointer;">Logout</button>
         </div>
     </header>
 
-    <div class="admin-only" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px;">
+    <div class="admin-only" id="adminTaskFormArea" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px;">
         <form id="taskForm" style="display:flex; flex-direction:column; gap:8px;">
             <input type="text" id="tTitle" placeholder="Work description..." required class="update-input" style="margin:0">
             <div style="display:flex; gap:8px;">
@@ -156,8 +164,20 @@
         </form>
     </div>
 
+    <!-- Search & Filter Controls -->
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search work orders..." class="search-input" oninput="filterTasksLive()">
+        <select id="statusFilter" class="search-input" style="max-width:140px;" onchange="filterTasksLive()">
+            <option value="all">All Statuses</option>
+            <option value="new">New</option>
+            <option value="in-progress">In Progress</option>
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+        </select>
+    </div>
+
     <!-- Assignee Filter -->
-    <div class="filter-section admin-only">
+    <div class="filter-section admin-only" id="adminStaffFilter">
         <span class="filter-label">Track Staff</span>
         <div class="filter-group" id="teamFilterBar"></div>
     </div>
@@ -195,7 +215,10 @@
         <div class="history-container" id="dHistory" style="flex:1; overflow-y:auto; margin-bottom:15px; padding-right:10px;"></div>
         
         <div style="background:#f9f9f9; padding:15px; border-radius:12px; margin-bottom: 20px;">
-            <textarea id="dNoteInput" class="update-input" style="height:80px; resize:none;" placeholder="Add update note (MANDATORY)..."></textarea>
+            <div style="display:flex; gap:10px; margin-bottom: 10px;">
+                <textarea id="dNoteInput" class="update-input" style="height:60px; resize:none; margin-bottom:0;" placeholder="Add text note..."></textarea>
+                <button id="recordAudioBtn" class="record-btn" onclick="toggleAudioRecording()" title="Hold/Click to record voice note">🎤</button>
+            </div>
             <div class="time-box">
                 <select id="dPriorityInput" class="update-input" style="margin-bottom:8px;">
                     <option value="Urgent">🔴 Urgent</option>
@@ -244,9 +267,18 @@
 <div class="modal" id="adminModal" onclick="toggleAdminModal(false)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h3>Settings & Staff</h3>
-        <input type="text" id="newStaffName" placeholder="New Staff Name" class="update-input" style="margin-top:15px;">
-        <input type="password" id="newStaffPass" placeholder="New Password" class="update-input">
+        
+        <div style="display:flex; gap:8px; margin-top:15px;">
+            <input type="text" id="newStaffName" placeholder="New Staff Name" class="update-input" style="margin:0; flex:1;">
+            <select id="newStaffRole" class="update-input" style="margin:0; width:100px;">
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        
+        <input type="password" id="newStaffPass" placeholder="New Password" class="update-input" style="margin-top:10px;">
         <button onclick="addStaffMember()" class="save-btn" style="margin-bottom:15px;">Add Staff Member</button>
+        
         <div id="staffListUI" style="max-height:300px; overflow-y:auto; margin-bottom:15px;"></div>
         <button onclick="toggleAdminModal(false)" class="save-btn" style="background:#eee; color:#333;">Close</button>
     </div>
@@ -262,7 +294,7 @@
 </div>
 
 <script>
-    // --- IMPORTANT: UPDATE THIS CONFIG TO YOUR FIREBASE DETAILS ---
+    // --- FIREBASE INITIALIZATION ---
     const firebaseConfig = { databaseURL: "https://task-76764-default-rtdb.firebaseio.com/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -272,10 +304,39 @@
     let activeFilters = { team: '' }; 
     let initialLoad = true;
     let knownTasks = new Set();
+    let currentTasksCache = {};
+    let currentOpenTaskId = null;
     
-    // Messaging Variables
+    // Messaging & Audio Variables
     let activeChatPartner = '';
     let currentChatRef = null;
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+
+    // Web Audio Chime Notification Helper
+    function playAudioTone(type) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            if (type === 'alert') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+            } else {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
+            }
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        } catch (e) { console.log("Audio not allowed yet"); }
+    }
 
     function getNowISO() {
         const now = new Date();
@@ -316,13 +377,19 @@
         document.getElementById('mainApp').style.display = 'block';
         document.getElementById('welcomeMsg').innerText = "Logged as: " + currentUser.name.toUpperCase();
         
-        if(currentUser.role === 'admin') {
-            document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+        // Safety lock for admin accessibility 
+        if(currentUser.role === 'admin' || currentUser.name === 'admin' || currentUser.name === 'chetan') {
+            currentUser.role = 'admin'; // Hard enforce admin powers
+            
+            // Explicitly show elements instead of relying just on CSS classes to prevent bugs
+            document.getElementById('settingsBtn').style.display = 'inline-block';
+            document.getElementById('adminTaskFormArea').style.display = 'block';
+            document.getElementById('adminStaffFilter').style.display = 'block';
+            
             if(!activeFilters.team) {
                 const firstStaff = Object.keys(allUsers).find(n => n !== 'admin');
                 if(firstStaff) activeFilters.team = firstStaff;
             }
-            // Set default date to 'now' when admin logs in
             setQuickDate('tDate', 'now');
         } else { 
             activeFilters.team = currentUser.name; 
@@ -331,6 +398,60 @@
         syncTasks();
         listenForUnreadMessages();
         startHourlyNudge(); 
+    }
+
+    // --- AUDIO RECORDING FOR NOTES ---
+    async function toggleAudioRecording() {
+        const btn = document.getElementById('recordAudioBtn');
+        
+        if (isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            btn.classList.remove('recording');
+            btn.innerText = '🎤';
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        const base64Audio = reader.result;
+                        saveAudioToTask(base64Audio);
+                    };
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                btn.classList.add('recording');
+                btn.innerText = '⏹️';
+            } catch (err) {
+                alert("Microphone access denied or not available. Please allow mic permissions in your browser.");
+            }
+        }
+    }
+
+    function saveAudioToTask(base64Data) {
+        if (!currentOpenTaskId) return;
+        
+        db.ref('tasks/' + currentOpenTaskId).once('value').then(snap => {
+            let t = snap.val();
+            let hist = t.history || [];
+            hist.push({ text: "🎤 Voice Note Recorded", audio: base64Data, user: currentUser.name, date: Date.now() });
+            
+            db.ref('tasks/' + currentOpenTaskId).update({ history: hist }).then(() => {
+                openDrawer(currentOpenTaskId, t); // Re-render to show new audio
+            });
+        });
     }
 
     // --- 1-ON-1 DIRECT MESSAGING LOGIC ---
@@ -359,6 +480,7 @@
         const chatId = getChatId(currentUser.name, activeChatPartner);
         db.ref(`unread/${currentUser.name}/${activeChatPartner}`).set(false);
         if(currentChatRef) currentChatRef.off(); 
+        
         currentChatRef = db.ref(`direct_messages/${chatId}`).orderByChild('timestamp').limitToLast(50);
         currentChatRef.on('value', snap => {
             const msgs = snap.val() || {};
@@ -411,6 +533,7 @@
             const badge = document.getElementById('msgBadge');
             if (hasUnread) {
                 badge.classList.add('rapid-blink');
+                playAudioTone('dm');
                 if (Notification.permission === 'granted' && document.visibilityState !== 'visible') {
                     new Notification("💬 New Message", { body: "You have a new direct message." });
                 }
@@ -446,10 +569,8 @@
             let diffX = touchendX - touchstartX;
             let diffY = Math.abs(touchendY - touchstartY);
 
-            // Ensure this is a horizontal swipe, not a vertical scroll
             if (diffY < 40) {
                 if (diffX > 80) {
-                    // Swipe Right: Quick Note
                     let note = window.prompt(`📱 QUICK NOTE\n\nAdd a fast update for:\n"${taskData.title}"`);
                     if (note && note.trim() !== "") {
                         let hist = taskData.history || [];
@@ -459,7 +580,6 @@
                         setTimeout(() => card.style.backgroundColor = 'white', 500);
                     }
                 } else if (diffX < -80) {
-                    // Swipe Left: Open Drawer full edit
                     openDrawer(taskId, taskData);
                 }
             }
@@ -469,33 +589,68 @@
     // --- KANBAN & TASKS LOGIC ---
     function syncTasks() {
         db.ref('tasks').on('value', snap => {
-            const tasks = snap.val() || {};
-            ['new', 'in-progress', 'pending', 'completed'].forEach(s => {
-                const col = document.getElementById('col-' + s);
-                if(col) col.innerHTML = '';
-            });
-
-            let stats = { new: 0, 'in-progress': 0, pending: 0, completed: 0 };
-            const now = new Date();
-            const priorityOrder = { 'Urgent': 1, 'Moderate': 2, 'Upcoming': 3 };
-
-            const sortedTasks = Object.entries(tasks).sort((a, b) => {
-                const pA = priorityOrder[a[1].priority] || 3;
-                const pB = priorityOrder[b[1].priority] || 3;
-                if (pA !== pB) return pA - pB; 
-                else return b[0].localeCompare(a[0]);
-            });
-
-            sortedTasks.forEach(([id, t]) => {
-                if (!initialLoad && !knownTasks.has(id) && t.assignee.toLowerCase() === currentUser.name && t.priority === 'Urgent') {
-                    if (Notification.permission === 'granted') {
-                        new Notification("🚨 URGENT WORK ORDER", { body: t.title, requireInteraction: true });
-                    }
+            currentTasksCache = snap.val() || {};
+            renderTasks();
+            
+            // Re-render open drawer history live if audio note was added by someone else
+            if (currentOpenTaskId && document.getElementById('taskDrawer').style.display === 'flex') {
+                if(currentTasksCache[currentOpenTaskId]) {
+                    renderDrawerHistory(currentTasksCache[currentOpenTaskId]);
                 }
-                knownTasks.add(id);
+            }
+        });
+    }
 
-                if (t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
-                    stats[t.status] = (stats[t.status] || 0) + 1;
+    function filterTasksLive() { renderTasks(); }
+
+    function getLastUpdatedTime(t) {
+        if (t.history && t.history.length > 0) {
+            return t.history[t.history.length - 1].date;
+        }
+        return 0;
+    }
+
+    function renderTasks() {
+        const tasks = currentTasksCache;
+        const query = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+        const statusFilterVal = document.getElementById('statusFilter')?.value || 'all';
+
+        ['new', 'in-progress', 'pending', 'completed'].forEach(s => {
+            const col = document.getElementById('col-' + s);
+            if(col) col.innerHTML = '';
+        });
+
+        let stats = { new: 0, 'in-progress': 0, pending: 0, completed: 0 };
+        const now = new Date();
+        const priorityOrder = { 'Urgent': 1, 'Moderate': 2, 'Upcoming': 3 };
+
+        // SORTING: Priority for active tasks, Timestamp for Completed tasks
+        const sortedTasks = Object.entries(tasks).sort((a, b) => {
+            if (a[1].status === 'completed' && b[1].status === 'completed') {
+                return getLastUpdatedTime(b[1]) - getLastUpdatedTime(a[1]); // Descending (latest first)
+            }
+            const pA = priorityOrder[a[1].priority] || 3;
+            const pB = priorityOrder[b[1].priority] || 3;
+            if (pA !== pB) return pA - pB; 
+            return b[0].localeCompare(a[0]);
+        });
+
+        sortedTasks.forEach(([id, t]) => {
+            if (!initialLoad && !knownTasks.has(id) && t.assignee.toLowerCase() === currentUser.name && t.priority === 'Urgent') {
+                playAudioTone('alert');
+                if (Notification.permission === 'granted') {
+                    new Notification("🚨 URGENT WORK ORDER", { body: t.title, requireInteraction: true });
+                }
+            }
+            knownTasks.add(id);
+
+            if (t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
+                stats[t.status] = (stats[t.status] || 0) + 1;
+                
+                const matchesSearch = !query || t.title.toLowerCase().includes(query);
+                const matchesStatus = statusFilterVal === 'all' || t.status === statusFilterVal;
+
+                if (matchesSearch && matchesStatus) {
                     const isOverdue = new Date(t.date) < now && t.status !== 'completed';
                     const priClass = (t.priority || 'upcoming').toLowerCase();
                     
@@ -504,7 +659,6 @@
                     card.draggable = true;
                     card.ondragstart = (e) => drag(e, id);
                     
-                    // Allow clicking for desktop, but also attach thumb-zone gestures
                     card.onclick = () => openDrawer(id, t);
                     attachSwipeGestures(card, id, t);
                     
@@ -523,21 +677,20 @@
                     const colContainer = document.getElementById('col-' + t.status);
                     if(colContainer) colContainer.appendChild(card);
                 }
-            });
-
-            for (let key in stats) { 
-                const cnt = document.getElementById('cnt-' + key);
-                if (cnt) cnt.innerText = stats[key]; 
             }
-            document.getElementById('taskBadge').innerText = stats.new + stats['in-progress'];
-            initialLoad = false;
         });
+
+        for (let key in stats) { 
+            const cnt = document.getElementById('cnt-' + key);
+            if (cnt) cnt.innerText = stats[key]; 
+        }
+        document.getElementById('taskBadge').innerText = stats.new + stats['in-progress'];
+        initialLoad = false;
     }
 
     function allowDrop(ev) { ev.preventDefault(); }
     function drag(ev, id) { ev.dataTransfer.setData("taskId", id); }
     
-    // --- FORCE MANDATORY NOTES ON DRAG AND DROP ---
     function drop(ev) {
         ev.preventDefault();
         const id = ev.dataTransfer.getData("taskId");
@@ -547,20 +700,46 @@
             db.ref('tasks/' + id).once('value').then(snap => {
                 const t = snap.val();
                 if (t && t.status !== newStatus) {
-                    let note = window.prompt(`🚨 MANDATORY UPDATE REQUIRED\n\nYou are moving this task to ${newStatus.toUpperCase()}.\nType your update note below:`);
-                    if (note === null || note.trim() === "") {
-                        alert("❌ Move cancelled! An update note is mandatory to change task status.");
-                        return; 
+                    let note = "";
+                    
+                    // COMPLETED BYPASS: Notes not mandatory when moving to Completed
+                    if (newStatus !== 'completed') {
+                        note = window.prompt(`🚨 MANDATORY UPDATE REQUIRED\n\nYou are moving this task to ${newStatus.toUpperCase()}.\nType your update note below:`);
+                        if (note === null || note.trim() === "") {
+                            alert("❌ Move cancelled! An update note is mandatory to change task status.");
+                            return; 
+                        }
                     }
+                    
                     let hist = t.history || [];
-                    hist.push({ text: `Moved to ${newStatus.toUpperCase()} - Note: ${note.trim()}`, user: currentUser.name, date: Date.now() });
+                    if (newStatus === 'completed' && !note) {
+                        hist.push({ text: `Task marked as COMPLETED.`, user: currentUser.name, date: Date.now() });
+                    } else {
+                        hist.push({ text: `Status updated to ${newStatus.toUpperCase()} ${note ? '- ' + note.trim() : ''}`, user: currentUser.name, date: Date.now() });
+                    }
+                    
                     db.ref('tasks/' + id).update({ status: newStatus, history: hist });
                 }
             });
         }
     }
 
+    function renderDrawerHistory(t) {
+        const historyBox = document.getElementById('dHistory');
+        historyBox.innerHTML = '<p class="filter-label">Activity Log</p>';
+        (t.history || []).slice().reverse().forEach(item => {
+            const audioHtml = item.audio ? `<audio controls src="${item.audio}" style="width:100%; height:35px; margin-top:8px; border-radius: 8px;"></audio>` : '';
+            historyBox.innerHTML += `<div class="history-item">
+                <span style="font-weight:bold;">${item.user.toUpperCase()}</span>
+                <span style="font-size:11px; color:#999; margin-left:10px;">${new Date(item.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                <p style="margin-top:4px;">${item.text}</p>
+                ${audioHtml}
+            </div>`;
+        });
+    }
+
     function openDrawer(id, t) {
+        currentOpenTaskId = id;
         const drw = document.getElementById('taskDrawer');
         drw.style.display = 'flex';
         document.getElementById('dTitle').innerText = t.title;
@@ -570,31 +749,28 @@
         document.getElementById('dDateInput').value = t.date || getNowISO();
         document.getElementById('dNoteInput').value = '';
         
-        const historyBox = document.getElementById('dHistory');
-        historyBox.innerHTML = '<p class="filter-label">Activity Log</p>';
-        (t.history || []).slice().reverse().forEach(item => {
-            historyBox.innerHTML += `<div class="history-item">
-                <span style="font-weight:bold;">${item.user.toUpperCase()}</span>
-                <span style="font-size:11px; color:#999; margin-left:10px;">${new Date(item.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                <p style="margin-top:4px;">${item.text}</p>
-            </div>`;
-        });
+        renderDrawerHistory(t);
 
-        // --- FORCE MANDATORY NOTES ON SAVE BUTTON ---
         document.getElementById('dSaveBtn').onclick = () => {
             const note = document.getElementById('dNoteInput').value.trim();
             const status = document.getElementById('dStatusInput').value;
             const priority = document.getElementById('dPriorityInput').value;
             const date = document.getElementById('dDateInput').value;
             
-            if (!note) {
+            // COMPLETED BYPASS: Notes not mandatory when saving as Completed
+            if (!note && status !== 'completed') {
                 alert("🚨 MANDATORY ACTION: You must write an update note in the text box before saving changes!");
                 document.getElementById('dNoteInput').focus();
                 return; 
             }
 
             let hist = t.history || [];
-            hist.push({ text: note, user: currentUser.name, date: Date.now() });
+            if (note) {
+                hist.push({ text: note, user: currentUser.name, date: Date.now() });
+            } else if (status === 'completed' && t.status !== 'completed') {
+                hist.push({ text: "Task marked as COMPLETED.", user: currentUser.name, date: Date.now() });
+            }
+            
             db.ref('tasks/' + id).update({ status, priority, date, history: hist }).then(() => drw.style.display = 'none');
         };
 
@@ -606,10 +782,12 @@
     function addStaffMember() {
         const n = document.getElementById('newStaffName').value.toLowerCase().trim();
         const p = document.getElementById('newStaffPass').value;
+        const role = document.getElementById('newStaffRole').value;
         if(n && p) {
-            db.ref('users/' + n).set({ password: p, role: 'staff' });
+            db.ref('users/' + n).set({ password: p, role: role });
             document.getElementById('newStaffName').value = '';
             document.getElementById('newStaffPass').value = '';
+            alert(`${n.toUpperCase()} has been added successfully.`);
         }
     }
 
@@ -650,14 +828,27 @@
     }
 
     function logout() { localStorage.removeItem('casa_session'); location.reload(); }
-    function closeDrawer(e) { if(e.target.id === 'taskDrawer') e.target.style.display = 'none'; }
-    function deleteTask(id) { if(confirm("Delete this task?")) { db.ref('tasks/' + id).remove(); document.getElementById('taskDrawer').style.display = 'none'; }}
+    
+    function closeDrawer(e) { 
+        if(e.target.id === 'taskDrawer') {
+            e.target.style.display = 'none'; 
+            currentOpenTaskId = null; // Clear context
+        }
+    }
+    
+    function deleteTask(id) { 
+        if(confirm("Delete this task?")) { 
+            db.ref('tasks/' + id).remove(); 
+            document.getElementById('taskDrawer').style.display = 'none'; 
+            currentOpenTaskId = null;
+        }
+    }
     
     function setFilter(type, val, btn) {
         activeFilters[type] = val;
         document.querySelectorAll('#teamFilterBar .filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        syncTasks();
+        renderTasks();
     }
 
     function updateTeamFilters() {
@@ -670,7 +861,7 @@
             if(act) activeFilters.team = u;
             bar.innerHTML += `<button class="filter-btn ${act?'active':''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`;
         });
-        syncTasks();
+        renderTasks();
     }
 
     document.getElementById('taskForm').onsubmit = (e) => {
@@ -715,6 +906,7 @@
 
             if (needsUpdate) {
                 document.getElementById('hourlyReminderModal').style.display = 'flex';
+                playAudioTone('alert');
                 if (Notification.permission === 'granted' && document.visibilityState !== 'visible') {
                     new Notification("🚨 UPDATE YOUR TASKS", { 
                         body: "You have work orders untouched for over an hour.",
