@@ -15,7 +15,7 @@
             --pri-urgent: #e74c3c; --pri-moderate: #f39c12; --pri-upcoming: #3498db;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
-        body { background-color: var(--bg); color: #1a1a1a; -webkit-font-smoothing: antialiased; }
+        body { background-color: var(--bg); color: #1a1a1a; -webkit-font-smoothing: antialiased; overscroll-behavior-y: contain; }
 
         .container { max-width: 1300px; margin: 0 auto; padding: 15px; display: none; }
         
@@ -32,10 +32,7 @@
             0% { transform: scale(1); background-color: var(--alert); box-shadow: 0 0 0px var(--alert); }
             100% { transform: scale(1.5); background-color: #ff0000; box-shadow: 0 0 12px #ff0000; }
         }
-        .rapid-blink {
-            display: block !important;
-            animation: rapidBlink 0.3s infinite alternate;
-        }
+        .rapid-blink { display: block !important; animation: rapidBlink 0.3s infinite alternate; }
 
         /* Priority Badges */
         .pri-tag { font-size: 9px; padding: 3px 6px; border-radius: 4px; color: white; font-weight: 900; text-transform: uppercase; margin-left: 5px; }
@@ -58,7 +55,7 @@
         .kanban-cards { display: flex; flex-direction: column; gap: 10px; min-height: 50px; flex: 1; }
         
         /* TASK CARDS */
-        .task-card { background: white; border-radius: 8px; border-left: 6px solid #ccc; padding: 14px; cursor: grab; transition: 0.2s; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .task-card { background: white; border-radius: 8px; border-left: 6px solid #ccc; padding: 14px; cursor: grab; transition: background-color 0.3s, transform 0.2s; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); touch-action: pan-y; }
         .task-card:active { cursor: grabbing; opacity: 0.8; transform: scale(0.98); }
         .card-new { border-left-color: var(--status-new); }
         .card-in-progress { border-left-color: var(--status-progress); }
@@ -126,7 +123,6 @@
             </div>
         </div>
         <div class="header-actions">
-            <!-- Messages Icon -->
             <div class="noti-wrapper">
                 <button class="noti-btn" onclick="toggleMsgModal(true)">💬</button>
                 <div class="badge-dot" id="msgBadge"></div>
@@ -233,13 +229,9 @@
         </div>
         
         <!-- User Selection Dropdown -->
-        <select id="chatUserSelect" class="update-input" style="margin-bottom:15px; font-weight:bold; background:#f0f2f5;" onchange="loadActiveChat()">
-            <!-- Dynamic Options -->
-        </select>
+        <select id="chatUserSelect" class="update-input" style="margin-bottom:15px; font-weight:bold; background:#f0f2f5;" onchange="loadActiveChat()"></select>
         
-        <div id="msgListUI" style="flex:1; overflow-y:auto; margin-bottom:15px; display:flex; flex-direction:column; gap:10px; padding-right:5px; background:#f9f9f9; padding:10px; border-radius:12px; border:1px solid #eee;">
-            <!-- Messages load here -->
-        </div>
+        <div id="msgListUI" style="flex:1; overflow-y:auto; margin-bottom:15px; display:flex; flex-direction:column; gap:10px; padding-right:5px; background:#f9f9f9; padding:10px; border-radius:12px; border:1px solid #eee;"></div>
         
         <div style="display:flex; gap:8px; margin-top: auto;">
             <input type="text" id="newMsgText" placeholder="Type a message..." class="update-input" style="margin:0; flex:1;">
@@ -264,7 +256,7 @@
 <div class="modal" id="hourlyReminderModal" style="z-index: 12000;">
     <div class="modal-content" style="text-align:center; border: 4px solid var(--alert);">
         <h2 style="color:var(--alert); margin-bottom: 10px; font-weight: 900;">🚨 UPDATE REQUIRED</h2>
-        <p style="margin-bottom: 20px; font-size: 14px; font-weight: bold;">You have active work orders that haven't been updated in over an hour. Please add a note or update the status.</p>
+        <p style="margin-bottom: 20px; font-size: 14px; font-weight: bold;">You have active work orders that haven't been updated recently. Please add a note or update the status to continue.</p>
         <button onclick="document.getElementById('hourlyReminderModal').style.display='none'" class="save-btn" style="background:var(--alert)">I Will Update Now</button>
     </div>
 </div>
@@ -330,7 +322,11 @@
                 const firstStaff = Object.keys(allUsers).find(n => n !== 'admin');
                 if(firstStaff) activeFilters.team = firstStaff;
             }
-        } else { activeFilters.team = currentUser.name; }
+            // Set default date to 'now' when admin logs in
+            setQuickDate('tDate', 'now');
+        } else { 
+            activeFilters.team = currentUser.name; 
+        }
         
         syncTasks();
         listenForUnreadMessages();
@@ -338,9 +334,7 @@
     }
 
     // --- 1-ON-1 DIRECT MESSAGING LOGIC ---
-    function getChatId(user1, user2) {
-        return [user1, user2].sort().join('_');
-    }
+    function getChatId(user1, user2) { return [user1, user2].sort().join('_'); }
 
     function updateChatUserList() {
         const sel = document.getElementById('chatUserSelect');
@@ -348,9 +342,7 @@
         sel.innerHTML = '';
         
         Object.keys(allUsers).forEach(u => {
-            if (u !== currentUser.name) {
-                sel.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`;
-            }
+            if (u !== currentUser.name) { sel.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`; }
         });
 
         if(currentSelection && allUsers[currentSelection]) {
@@ -364,35 +356,26 @@
     function loadActiveChat() {
         activeChatPartner = document.getElementById('chatUserSelect').value;
         if (!activeChatPartner) return;
-
         const chatId = getChatId(currentUser.name, activeChatPartner);
-        
         db.ref(`unread/${currentUser.name}/${activeChatPartner}`).set(false);
-
         if(currentChatRef) currentChatRef.off(); 
-        
         currentChatRef = db.ref(`direct_messages/${chatId}`).orderByChild('timestamp').limitToLast(50);
         currentChatRef.on('value', snap => {
             const msgs = snap.val() || {};
             const list = document.getElementById('msgListUI');
             list.innerHTML = '';
-            
             const sortedMsgs = Object.values(msgs).sort((a,b) => a.timestamp - b.timestamp);
-            
             if(sortedMsgs.length === 0) {
                 list.innerHTML = `<div style="text-align:center; color:#999; font-size:12px; margin-top:20px;">No messages yet. Say hello to ${activeChatPartner.toUpperCase()}!</div>`;
             }
-
             sortedMsgs.forEach(m => {
                 const isMe = m.sender === currentUser.name;
                 list.innerHTML += `
                     <div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? 'var(--accent)' : '#e3e6e8'}; color: ${isMe ? 'white' : '#333'}; padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 13px; line-height: 1.4;">
                         <div style="font-size: 9px; font-weight: 800; opacity: 0.7; margin-bottom: 4px;">${m.sender.toUpperCase()} • ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
                         <div>${m.text}</div>
-                    </div>
-                `;
+                    </div>`;
             });
-            
             list.scrollTop = list.scrollHeight;
         });
     }
@@ -401,17 +384,9 @@
         const input = document.getElementById('newMsgText');
         const text = input.value.trim();
         if (!text || !activeChatPartner) return;
-        
         const chatId = getChatId(currentUser.name, activeChatPartner);
-        
-        db.ref(`direct_messages/${chatId}`).push({
-            text: text,
-            sender: currentUser.name,
-            timestamp: Date.now()
-        });
-        
+        db.ref(`direct_messages/${chatId}`).push({ text: text, sender: currentUser.name, timestamp: Date.now() });
         db.ref(`unread/${activeChatPartner}/${currentUser.name}`).set(true);
-        
         input.value = '';
     }
 
@@ -423,24 +398,16 @@
         db.ref(`unread/${currentUser.name}`).on('value', snap => {
             const unreads = snap.val() || {};
             let hasUnread = false;
-            
             const select = document.getElementById('chatUserSelect');
-            
-            Array.from(select.options).forEach(opt => {
-                opt.text = opt.value.toUpperCase(); 
-            });
-
+            Array.from(select.options).forEach(opt => { opt.text = opt.value.toUpperCase(); });
             for (let sender in unreads) {
                 if (unreads[sender] === true) {
                     hasUnread = true;
                     Array.from(select.options).forEach(opt => {
-                        if(opt.value === sender) {
-                            opt.text = `🔴 ${opt.value.toUpperCase()} (New)`;
-                        }
+                        if(opt.value === sender) { opt.text = `🔴 ${opt.value.toUpperCase()} (New)`; }
                     });
                 }
             }
-            
             const badge = document.getElementById('msgBadge');
             if (hasUnread) {
                 badge.classList.add('rapid-blink');
@@ -451,7 +418,6 @@
                 badge.classList.remove('rapid-blink');
                 badge.style.display = 'none'; 
             }
-            
             if (document.getElementById('msgModal').style.display === 'flex' && unreads[activeChatPartner] === true) {
                 db.ref(`unread/${currentUser.name}/${activeChatPartner}`).set(false);
             }
@@ -460,16 +426,50 @@
 
     function toggleMsgModal(show) {
         document.getElementById('msgModal').style.display = show ? 'flex' : 'none';
-        if (show) {
-            loadActiveChat();
-        }
+        if (show) { loadActiveChat(); }
+    }
+
+    // --- THUMB-ZONE MOBILE GESTURES (SWIPE EVENTS) ---
+    function attachSwipeGestures(card, taskId, taskData) {
+        let touchstartX = 0;
+        let touchstartY = 0;
+
+        card.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+            touchstartY = e.changedTouches[0].screenY;
+        }, {passive: true});
+
+        card.addEventListener('touchend', e => {
+            let touchendX = e.changedTouches[0].screenX;
+            let touchendY = e.changedTouches[0].screenY;
+            
+            let diffX = touchendX - touchstartX;
+            let diffY = Math.abs(touchendY - touchstartY);
+
+            // Ensure this is a horizontal swipe, not a vertical scroll
+            if (diffY < 40) {
+                if (diffX > 80) {
+                    // Swipe Right: Quick Note
+                    let note = window.prompt(`📱 QUICK NOTE\n\nAdd a fast update for:\n"${taskData.title}"`);
+                    if (note && note.trim() !== "") {
+                        let hist = taskData.history || [];
+                        hist.push({ text: "⚡ Quick Update: " + note.trim(), user: currentUser.name, date: Date.now() });
+                        db.ref('tasks/' + taskId).update({ history: hist });
+                        card.style.backgroundColor = '#d4edda';
+                        setTimeout(() => card.style.backgroundColor = 'white', 500);
+                    }
+                } else if (diffX < -80) {
+                    // Swipe Left: Open Drawer full edit
+                    openDrawer(taskId, taskData);
+                }
+            }
+        }, {passive: true});
     }
 
     // --- KANBAN & TASKS LOGIC ---
     function syncTasks() {
         db.ref('tasks').on('value', snap => {
             const tasks = snap.val() || {};
-            
             ['new', 'in-progress', 'pending', 'completed'].forEach(s => {
                 const col = document.getElementById('col-' + s);
                 if(col) col.innerHTML = '';
@@ -503,7 +503,10 @@
                     card.className = `task-card card-${t.status} ${isOverdue ? 'is-overdue' : ''}`;
                     card.draggable = true;
                     card.ondragstart = (e) => drag(e, id);
+                    
+                    // Allow clicking for desktop, but also attach thumb-zone gestures
                     card.onclick = () => openDrawer(id, t);
+                    attachSwipeGestures(card, id, t);
                     
                     card.innerHTML = `
                         <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; margin-bottom:8px;">
@@ -544,15 +547,11 @@
             db.ref('tasks/' + id).once('value').then(snap => {
                 const t = snap.val();
                 if (t && t.status !== newStatus) {
-                    
-                    // Force a note via native window prompt
                     let note = window.prompt(`🚨 MANDATORY UPDATE REQUIRED\n\nYou are moving this task to ${newStatus.toUpperCase()}.\nType your update note below:`);
-                    
                     if (note === null || note.trim() === "") {
                         alert("❌ Move cancelled! An update note is mandatory to change task status.");
-                        return; // Stop the move completely
+                        return; 
                     }
-
                     let hist = t.history || [];
                     hist.push({ text: `Moved to ${newStatus.toUpperCase()} - Note: ${note.trim()}`, user: currentUser.name, date: Date.now() });
                     db.ref('tasks/' + id).update({ status: newStatus, history: hist });
@@ -588,11 +587,10 @@
             const priority = document.getElementById('dPriorityInput').value;
             const date = document.getElementById('dDateInput').value;
             
-            // Check if note is empty
             if (!note) {
                 alert("🚨 MANDATORY ACTION: You must write an update note in the text box before saving changes!");
                 document.getElementById('dNoteInput').focus();
-                return; // Stop the save process
+                return; 
             }
 
             let hist = t.history || [];
@@ -689,28 +687,25 @@
         setQuickDate('tDate', 'now');
     };
 
-    // --- STAGNATION MONITOR ---
+    // --- STAGNATION MONITOR & WELCOME BACK ALERTS ---
     function startHourlyNudge() {
         setInterval(checkStagnantTasks, 300000); 
     }
 
     function checkStagnantTasks() {
-        if (currentUser.role === 'admin') return; 
-
-        let needsUpdate = false;
+        if (!currentUser || currentUser.role === 'admin') return; 
+        
         const now = Date.now();
         const ONE_HOUR = 60 * 60 * 1000; 
 
         db.ref('tasks').once('value').then(snap => {
+            let needsUpdate = false;
             const tasks = snap.val() || {};
             for (let id in tasks) {
                 const t = tasks[id];
-                
                 if (t.assignee.toLowerCase() === currentUser.name && t.status !== 'completed') {
-                    
                     const history = t.history || [];
                     const lastUpdate = history.length > 0 ? history[history.length - 1].date : Date.parse(t.date);
-                    
                     if (now - lastUpdate > ONE_HOUR) {
                         needsUpdate = true;
                         break; 
@@ -720,7 +715,6 @@
 
             if (needsUpdate) {
                 document.getElementById('hourlyReminderModal').style.display = 'flex';
-                
                 if (Notification.permission === 'granted' && document.visibilityState !== 'visible') {
                     new Notification("🚨 UPDATE YOUR TASKS", { 
                         body: "You have work orders untouched for over an hour.",
@@ -730,6 +724,14 @@
             }
         });
     }
+
+    // Listens for device unlocking / tab switching
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && currentUser && currentUser.role !== 'admin') {
+            checkStagnantTasks();
+        }
+    });
+
 </script>
 </body>
 </html>
