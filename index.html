@@ -96,12 +96,17 @@
         .record-btn { background: var(--bg); border: 1px solid #ddd; border-radius: 8px; width: 60px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: 0.3s; }
         .record-btn.recording { background: var(--alert); color: white; border-color: var(--alert); animation: pulse 1s infinite; }
 
-        /* MOBILE RESPONSIVE OVERRIDES */
+        /* MOBILE RESPONSIVE OVERRIDES - FIXED FOR DISPLAY & SCROLL ISSUES */
         @media (max-width: 768px) {
             header { flex-direction: column; align-items: flex-start; gap: 15px; }
             .header-actions { width: 100%; justify-content: space-between; border-top: 1px solid #eee; padding-top: 10px; }
-            .kanban-board { scroll-snap-type: x mandatory; gap: 10px; padding: 0 5px 20px 5px; }
-            .kanban-col { min-width: 85vw; width: 85vw; scroll-snap-align: center; }
+            
+            /* Fluid horizontal scroll without snapping locks */
+            .kanban-board { overflow-x: auto; gap: 15px; padding: 0 10px 20px 10px; scroll-snap-type: none; flex-wrap: nowrap; }
+            
+            /* Force exact width and prevent shrinking so cards render properly */
+            .kanban-col { min-width: 85vw; width: 85vw; flex: 0 0 85vw; }
+            
             .drawer { align-items: flex-end; justify-content: center; }
             .drawer-content { height: 90vh; max-width: 100%; border-radius: 24px 24px 0 0; padding: 20px 15px; animation: slideUp 0.3s ease; }
             @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -141,6 +146,17 @@
             <button onclick="logout()" style="border:none; background:none; color:var(--alert); font-weight:bold; font-size:1rem; cursor:pointer;">Logout</button>
         </div>
     </header>
+
+    <!-- ADMIN REALTIME ACTIVITY LOG BOX -->
+    <div class="admin-only" id="adminActivityBox" style="background:#fff; border:1px solid #ddd; padding:15px; border-radius:12px; margin-bottom:15px; border-left: 5px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <h4 style="margin-bottom: 12px; font-size: 13px; text-transform: uppercase; color: #333; display: flex; justify-content: space-between;">
+            <span>📡 Live Activity Feed</span>
+            <span style="font-size: 10px; background: var(--status-completed); color: white; padding: 2px 6px; border-radius: 8px;">REALTIME</span>
+        </h4>
+        <div id="adminActivityFeed" style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 12px; color: #999;">Waiting for activity...</div>
+        </div>
+    </div>
 
     <div class="admin-only" id="adminTaskFormArea" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px;">
         <form id="taskForm" style="display:flex; flex-direction:column; gap:8px;">
@@ -299,7 +315,26 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let currentUser = JSON.parse(localStorage.getItem('casa_session')) || null;
+    // --- PERSISTENT LOGIN (Prevents Auto Logout / Dropped Sessions) ---
+    function getSession() {
+        let session = localStorage.getItem('casa_session');
+        if (!session) {
+            const match = document.cookie.match(new RegExp('(^| )casa_session=([^;]+)'));
+            if (match) {
+                session = decodeURIComponent(match[2]);
+                localStorage.setItem('casa_session', session);
+            }
+        }
+        return session ? JSON.parse(session) : null;
+    }
+    
+    function setSession(user) {
+        localStorage.setItem('casa_session', JSON.stringify(user));
+        // Ensure it doesn't get cleared by setting a long-lived cookie as fallback (10 years)
+        document.cookie = "casa_session=" + encodeURIComponent(JSON.stringify(user)) + "; max-age=315360000; path=/";
+    }
+
+    let currentUser = getSession();
     let allUsers = {};
     let activeFilters = { team: '' }; 
     let initialLoad = true;
@@ -314,27 +349,28 @@
     let audioChunks = [];
     let isRecording = false;
 
-    // Web Audio Chime Notification Helper
-    function playAudioTone(type) {
+    // --- NEW RING SOUND NOTIFICATION ---
+    function playRingSound() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            if (type === 'alert') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(440, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
-            } else {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
-            }
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.3);
+            const playNote = (freq, delay) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+                gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + delay + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + 0.3);
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + 0.4);
+            };
+            // Beautiful multi-tone ring sequence
+            playNote(523.25, 0);       // C5
+            playNote(659.25, 0.15);    // E5
+            playNote(783.99, 0.3);     // G5
+            playNote(1046.50, 0.45);   // C6
         } catch (e) { console.log("Audio not allowed yet"); }
     }
 
@@ -367,7 +403,7 @@
         const p = document.getElementById('passIn').value;
         if(allUsers[u] && allUsers[u].password === p) {
             currentUser = { name: u, role: allUsers[u].role || 'staff' };
-            localStorage.setItem('casa_session', JSON.stringify(currentUser));
+            setSession(currentUser);
             startApp();
         } else { alert("Login failed. Check username and password."); }
     }
@@ -383,6 +419,7 @@
             
             // Explicitly show elements instead of relying just on CSS classes to prevent bugs
             document.getElementById('settingsBtn').style.display = 'inline-block';
+            document.getElementById('adminActivityBox').style.display = 'block';
             document.getElementById('adminTaskFormArea').style.display = 'block';
             document.getElementById('adminStaffFilter').style.display = 'block';
             
@@ -533,7 +570,7 @@
             const badge = document.getElementById('msgBadge');
             if (hasUnread) {
                 badge.classList.add('rapid-blink');
-                playAudioTone('dm');
+                playRingSound();
                 if (Notification.permission === 'granted' && document.visibilityState !== 'visible') {
                     new Notification("💬 New Message", { body: "You have a new direct message." });
                 }
@@ -610,10 +647,49 @@
         return 0;
     }
 
+    // --- ADMIN REALTIME UPDATES FEED ---
+    function updateAdminActivityFeed() {
+        if (!currentUser || currentUser.role !== 'admin') return;
+        
+        const feed = document.getElementById('adminActivityFeed');
+        let allHistory = [];
+        
+        for (let id in currentTasksCache) {
+            const t = currentTasksCache[id];
+            if (t.history) {
+                t.history.forEach(h => {
+                    allHistory.push({ ...h, taskTitle: t.title, taskId: id });
+                });
+            }
+        }
+        
+        allHistory.sort((a, b) => b.date - a.date); // Newest first
+        const recent = allHistory.slice(0, 20); // Show top 20 latest events
+        
+        if (recent.length === 0) {
+            feed.innerHTML = '<div style="font-size:12px; color:#999;">No recent activity.</div>';
+            return;
+        }
+
+        feed.innerHTML = recent.map(h => `
+            <div style="background: #f4f6f8; padding: 10px; border-radius: 8px; border-left: 3px solid var(--primary); font-size: 12px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <strong style="color: var(--primary);">${h.user.toUpperCase()}</strong>
+                    <span style="font-size: 10px; color: #888;">${new Date(h.date).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</span>
+                </div>
+                <div style="color: #444; font-weight: bold; margin-bottom: 2px;">📄 ${h.taskTitle}</div>
+                <div style="color: #666;">${h.text}</div>
+            </div>
+        `).join('');
+    }
+
     function renderTasks() {
         const tasks = currentTasksCache;
         const query = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
         const statusFilterVal = document.getElementById('statusFilter')?.value || 'all';
+
+        // Update real-time feed if admin
+        updateAdminActivityFeed();
 
         ['new', 'in-progress', 'pending', 'completed'].forEach(s => {
             const col = document.getElementById('col-' + s);
@@ -636,15 +712,16 @@
         });
 
         sortedTasks.forEach(([id, t]) => {
+            // Urgent Ring Notifications
             if (!initialLoad && !knownTasks.has(id) && t.assignee.toLowerCase() === currentUser.name && t.priority === 'Urgent') {
-                playAudioTone('alert');
+                playRingSound();
                 if (Notification.permission === 'granted') {
                     new Notification("🚨 URGENT WORK ORDER", { body: t.title, requireInteraction: true });
                 }
             }
             knownTasks.add(id);
 
-            if (t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
+            if (activeFilters.team && t.assignee.toLowerCase() === activeFilters.team.toLowerCase()) {
                 stats[t.status] = (stats[t.status] || 0) + 1;
                 
                 const matchesSearch = !query || t.title.toLowerCase().includes(query);
@@ -827,7 +904,11 @@
         });
     }
 
-    function logout() { localStorage.removeItem('casa_session'); location.reload(); }
+    function logout() { 
+        localStorage.removeItem('casa_session'); 
+        document.cookie = "casa_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        location.reload(); 
+    }
     
     function closeDrawer(e) { 
         if(e.target.id === 'taskDrawer') {
@@ -856,11 +937,16 @@
         document.getElementById('tUser').innerHTML = list.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join('');
         const bar = document.getElementById('teamFilterBar');
         bar.innerHTML = '';
+        
         list.forEach((u, i) => {
-            const act = activeFilters.team === u || (!activeFilters.team && i === 0);
-            if(act) activeFilters.team = u;
+            // Apply filter gracefully on load if not set
+            const act = (activeFilters.team === u) || (!activeFilters.team && i === 0) || (currentUser.role === 'admin' && !activeFilters.team && i === 0);
+            if (act) activeFilters.team = u;
+            
             bar.innerHTML += `<button class="filter-btn ${act?'active':''}" onclick="setFilter('team', '${u}', this)">${u.toUpperCase()}</button>`;
         });
+        
+        // Ensure tasks render correctly when team list builds
         renderTasks();
     }
 
@@ -906,7 +992,7 @@
 
             if (needsUpdate) {
                 document.getElementById('hourlyReminderModal').style.display = 'flex';
-                playAudioTone('alert');
+                playRingSound();
                 if (Notification.permission === 'granted' && document.visibilityState !== 'visible') {
                     new Notification("🚨 UPDATE YOUR TASKS", { 
                         body: "You have work orders untouched for over an hour.",
