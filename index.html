@@ -99,17 +99,12 @@
         .record-btn { background: var(--bg); border: 1px solid #ddd; border-radius: 8px; width: 60px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: 0.3s; }
         .record-btn.recording { background: var(--alert); color: white; border-color: var(--alert); animation: pulse 1s infinite; }
 
-        /* MOBILE RESPONSIVE OVERRIDES - FIXED FOR DISPLAY & SCROLL ISSUES */
+        /* MOBILE RESPONSIVE OVERRIDES */
         @media (max-width: 768px) {
             header { flex-direction: column; align-items: flex-start; gap: 15px; }
             .header-actions { width: 100%; justify-content: space-between; border-top: 1px solid #eee; padding-top: 10px; }
-            
-            /* Fluid horizontal scroll without snapping locks */
             .kanban-board { overflow-x: auto; gap: 15px; padding: 0 10px 20px 10px; scroll-snap-type: none; flex-wrap: nowrap; }
-            
-            /* Force exact width and prevent shrinking so cards render properly */
             .kanban-col { min-width: 85vw; width: 85vw; flex: 0 0 85vw; }
-            
             .drawer { align-items: flex-end; justify-content: center; }
             .drawer-content { height: 90vh; max-width: 100%; border-radius: 24px 24px 0 0; padding: 20px 15px; animation: slideUp 0.3s ease; }
             @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -161,12 +156,11 @@
         </div>
     </div>
 
-    <!-- TASK CREATION FORM (Available to everyone) -->
+    <!-- TASK CREATION FORM -->
     <div id="taskFormArea" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px; display:none;">
         <form id="taskForm" style="display:flex; flex-direction:column; gap:8px;">
             <input type="text" id="tTitle" placeholder="Work description..." required class="update-input" style="margin:0">
             <div style="display:flex; gap:8px;">
-                <!-- Auto-populated based on Role -->
                 <select id="tUser" class="update-input" style="margin:0; flex:1;"></select> 
                 <select id="tPriority" class="update-input" style="margin:0; flex:1;">
                     <option value="Urgent">🔴 Urgent</option>
@@ -304,15 +298,6 @@
     </div>
 </div>
 
-<!-- Hourly Reminder Modal -->
-<div class="modal" id="hourlyReminderModal" style="z-index: 12000;">
-    <div class="modal-content" style="text-align:center; border: 4px solid var(--alert);">
-        <h2 style="color:var(--alert); margin-bottom: 10px; font-weight: 900;">🚨 UPDATE REQUIRED</h2>
-        <p style="margin-bottom: 20px; font-size: 14px; font-weight: bold;">You have active work orders that haven't been updated recently. Please add a note or update the status to continue.</p>
-        <button onclick="document.getElementById('hourlyReminderModal').style.display='none'" class="save-btn" style="background:var(--alert)">I Will Update Now</button>
-    </div>
-</div>
-
 <script>
     // --- FIREBASE INITIALIZATION ---
     const firebaseConfig = { databaseURL: "https://task-76764-default-rtdb.firebaseio.com/" };
@@ -357,7 +342,7 @@
     let audioChunks = [];
     let isRecording = false;
 
-    // --- DRAG TO SCROLL FOR STAFF FILTER (DESKTOP) ---
+    // --- DRAG TO SCROLL FOR STAFF FILTER ---
     const slider = document.getElementById('teamFilterBar');
     let isDown = false; let startX; let scrollLeft;
     
@@ -372,11 +357,11 @@
         if (!isDown) return;
         e.preventDefault();
         const x = e.pageX - slider.offsetLeft;
-        const walk = (x - startX) * 2; // Scroll speed multiplier
+        const walk = (x - startX) * 2;
         slider.scrollLeft = scrollLeft - walk;
     });
 
-    // --- NEW RING SOUND NOTIFICATION ---
+    // --- SOUND NOTIFICATION ---
     function playRingSound() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -439,12 +424,11 @@
         document.getElementById('mainApp').style.display = 'block';
         document.getElementById('welcomeMsg').innerText = "Logged as: " + currentUser.name.toUpperCase();
         
-        // Task creation is now visible to ALL users
         document.getElementById('taskFormArea').style.display = 'block';
         setQuickDate('tDate', 'now');
         
         if(currentUser.role === 'admin' || currentUser.name === 'admin' || currentUser.name === 'chetan') {
-            currentUser.role = 'admin'; // Hard enforce admin powers
+            currentUser.role = 'admin';
             
             document.getElementById('settingsBtn').style.display = 'inline-block';
             document.getElementById('adminActivityBox').style.display = 'block';
@@ -455,13 +439,11 @@
                 if(firstStaff) activeFilters.team = firstStaff;
             }
         } else { 
-            // Fixes initial render race-condition for staff on mobile
             activeFilters.team = currentUser.name; 
         }
         
         syncTasks();
         listenForUnreadMessages();
-        startHourlyNudge(); 
     }
 
     // --- AUDIO RECORDING FOR NOTES ---
@@ -613,7 +595,7 @@
         if (show) { loadActiveChat(); }
     }
 
-    // --- THUMB-ZONE MOBILE GESTURES (SWIPE EVENTS) ---
+    // --- SWIPE GESTURES ---
     function attachSwipeGestures(card, taskId, taskData) {
         let touchstartX = 0;
         let touchstartY = 0;
@@ -670,7 +652,6 @@
         return 0;
     }
 
-    // --- ADMIN REALTIME UPDATES FEED ---
     function updateAdminActivityFeed() {
         if (!currentUser || currentUser.role !== 'admin') return;
         
@@ -741,11 +722,10 @@
             }
             knownTasks.add(id);
 
-            // Visibility Logic: Global Search Bypass or Standard Auth Render
             let isVisible = false;
             
             if (query !== '') {
-                isVisible = true; // Typing overrides team filter to search globally
+                isVisible = true;
             } else {
                 if (currentUser && currentUser.role === 'admin') {
                     isVisible = activeFilters.team && t.assignee.toLowerCase() === activeFilters.team.toLowerCase();
@@ -759,8 +739,6 @@
                 const matchesStatus = statusFilterVal === 'all' || t.status === statusFilterVal;
 
                 if (matchesSearch && matchesStatus) {
-                    
-                    // Increment badges logic accurately (based on what matches the original team selection for dashboard parity)
                     if(t.assignee.toLowerCase() === (activeFilters.team || currentUser.name).toLowerCase() || query !== '') {
                         stats[t.status] = (stats[t.status] || 0) + 1;
                     }
@@ -970,11 +948,9 @@
     function updateTeamFilters() {
         let list = Object.keys(allUsers).filter(n => n !== 'admin');
         
-        // Form Assignment Rules: Admins see everyone, Staff see only themselves
         let dropdownList = (currentUser && currentUser.role === 'admin') ? list : (currentUser ? [currentUser.name] : []);
         document.getElementById('tUser').innerHTML = dropdownList.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join('');
         
-        // UI Tabs update specifically for Admin layout
         if (currentUser && currentUser.role === 'admin') {
             const bar = document.getElementById('teamFilterBar');
             bar.innerHTML = '';
@@ -1002,51 +978,6 @@
         document.getElementById('tTitle').value = ''; 
         setQuickDate('tDate', 'now');
     };
-
-    // --- STAGNATION MONITOR & WELCOME BACK ALERTS ---
-    function startHourlyNudge() {
-        setInterval(checkStagnantTasks, 300000); 
-    }
-
-    function checkStagnantTasks() {
-        if (!currentUser || currentUser.role === 'admin') return; 
-        
-        const now = Date.now();
-        const ONE_HOUR = 60 * 60 * 1000; 
-
-        db.ref('tasks').once('value').then(snap => {
-            let needsUpdate = false;
-            const tasks = snap.val() || {};
-            for (let id in tasks) {
-                const t = tasks[id];
-                if (t.assignee.toLowerCase() === currentUser.name && t.status !== 'completed') {
-                    const history = t.history || [];
-                    const lastUpdate = history.length > 0 ? history[history.length - 1].date : Date.parse(t.date);
-                    if (now - lastUpdate > ONE_HOUR) {
-                        needsUpdate = true;
-                        break; 
-                    }
-                }
-            }
-
-            if (needsUpdate) {
-                document.getElementById('hourlyReminderModal').style.display = 'flex';
-                playRingSound();
-                if (Notification.permission === 'granted' && document.visibilityState !== 'visible') {
-                    new Notification("🚨 UPDATE YOUR TASKS", { 
-                        body: "You have work orders untouched for over an hour.",
-                        requireInteraction: true 
-                    });
-                }
-            }
-        });
-    }
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && currentUser && currentUser.role !== 'admin') {
-            checkStagnantTasks();
-        }
-    });
 
 </script>
 </body>
