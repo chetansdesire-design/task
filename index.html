@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>URBAN CASA | Command Center</title>
+    
+    <!-- PWA Dynamic Manifest -->
+    <link rel="manifest" id="pwaManifest">
+    <meta name="theme-color" content="#0284c7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -52,6 +59,21 @@
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+    <!-- INSTALL PWA BANNER -->
+    <div id="installBanner" class="hidden bg-gradient-to-r from-sky-600 to-blue-700 text-white px-4 py-3 flex items-center justify-between shadow-lg sticky top-0 z-[12000]">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-cloud-arrow-down text-lg"></i>
+            <div>
+                <p class="text-xs font-bold">Install Urban Casa Command Center</p>
+                <p class="text-[10px] text-sky-100">Add to home screen for smooth app experience & instant alerts.</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="installPWA()" class="bg-white text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg shadow transition">Install App</button>
+            <button onclick="document.getElementById('installBanner').classList.add('hidden')" class="text-sky-200 hover:text-white text-xs px-2 py-1">✕</button>
+        </div>
+    </div>
 
     <!-- LOGIN OVERLAY -->
     <div id="loginOverlay" class="fixed inset-0 bg-slate-950/95 flex items-center justify-center z-[11000] p-4">
@@ -140,31 +162,35 @@
             <div id="teamFilterBar" class="flex gap-2 overflow-x-auto pb-1"></div>
         </div>
 
-        <!-- KANBAN BOARD (Old/Overdue Works Sorted to Top) -->
+        <!-- KANBAN BOARD (Old/Overdue Works Sorted to Top, 10+ Expandable) -->
         <div class="kanban-board grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" id="kanbanBoard">
             <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3 min-h-[60vh]" data-status="new">
                 <div class="flex justify-between items-center font-bold text-xs uppercase text-sky-400 pb-2 border-b border-slate-800">
                     <span>New</span> <span id="cnt-new" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
                 </div>
                 <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-new"></div>
+                <div id="expand-new"></div>
             </div>
             <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3 min-h-[60vh]" data-status="in-progress">
                 <div class="flex justify-between items-center font-bold text-xs uppercase text-amber-400 pb-2 border-b border-slate-800">
                     <span>In Progress</span> <span id="cnt-in-progress" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
                 </div>
                 <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-in-progress"></div>
+                <div id="expand-in-progress"></div>
             </div>
             <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3 min-h-[60vh]" data-status="pending">
                 <div class="flex justify-between items-center font-bold text-xs uppercase text-indigo-400 pb-2 border-b border-slate-800">
                     <span>Pending</span> <span id="cnt-pending" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
                 </div>
                 <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-pending"></div>
+                <div id="expand-pending"></div>
             </div>
             <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3 min-h-[60vh]" data-status="completed">
                 <div class="flex justify-between items-center font-bold text-xs uppercase text-emerald-400 pb-2 border-b border-slate-800">
                     <span>Completed</span> <span id="cnt-completed" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
                 </div>
                 <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-completed"></div>
+                <div id="expand-completed"></div>
             </div>
         </div>
     </div>
@@ -184,7 +210,7 @@
             <div id="dHistory" class="flex-1 overflow-y-auto space-y-2 mb-4 pr-1"></div>
             <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                 <div class="flex gap-2">
-                    <textarea id="dNoteInput" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 resize-none focus:outline-none" style="height:60px;" placeholder="Add update note..."></textarea>
+                    <textarea id="dNoteInput" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 resize-none focus:outline-none" style="height:60px;" placeholder="Mandatory update note..."></textarea>
                     <button id="recordAudioBtn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl w-12 flex items-center justify-center text-lg text-slate-200 transition" onclick="toggleAudioRecording()" title="Record voice note">🎤</button>
                 </div>
                 <div class="space-y-2">
@@ -201,7 +227,7 @@
                         <select id="dDateInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none font-bold text-amber-400"></select>
                     </div>
                 </div>
-                <button id="dSaveBtn" onclick="saveTaskUpdate()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition">Save Updates</button>
+                <button id="dSaveBtn" onclick="saveTaskUpdate()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition">Save Updates & Notes</button>
                 <div id="deleteTaskArea"></div>
             </div>
         </div>
@@ -270,6 +296,52 @@
 
     <!-- SCRIPT ENGINE -->
     <script>
+        // PWA Setup & Service Worker Registration
+        const manifestData = {
+            "name": "Urban Casa Command Center",
+            "short_name": "UrbanCasa",
+            "start_url": "./",
+            "display": "standalone",
+            "background_color": "#020617",
+            "theme_color": "#0284c7",
+            "icons": [
+                { "src": "https://via.placeholder.com/192.svg?text=UC", "sizes": "192x192", "type": "image/svg+xml" },
+                { "src": "https://via.placeholder.com/512.svg?text=UC", "sizes": "512x512", "type": "image/svg+xml" }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+        document.getElementById('pwaManifest').setAttribute('href', URL.createObjectURL(manifestBlob));
+
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', e => self.skipWaiting());
+                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', e => {});
+            `;
+            const swBlob = new Blob([swCode], {type: 'text/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(err => console.log('SW error', err));
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').classList.remove('hidden');
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('installBanner').classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // FIREBASE INITIALIZATION
         const firebaseConfig = { databaseURL: "https://task-76764-default-rtdb.firebaseio.com/" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
@@ -300,18 +372,18 @@
         let archivedTasksCache = {};
         let currentOpenTaskId = null;
         let activeChatPartner = '';
+        let expandedColumns = { new: false, 'in-progress': false, pending: false, completed: false };
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
 
         function getNowISO() {
             const now = new Date();
-            now.setHours(now.getHours() + 24, 0, 0, 0); // 24 hours ahead, exact hour precision
+            now.setHours(now.getHours() + 24, 0, 0, 0); 
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             return now.toISOString().slice(0, 16);
         }
 
-        // Populates working hours dropdown slots (9:00 AM to 9:00 PM for today and next 5 days)
         function populateWorkingHoursSelect(selectedVal) {
             const select = document.getElementById('dDateInput');
             select.innerHTML = '';
@@ -322,7 +394,6 @@
                 targetDate.setDate(now.getDate() + d);
                 const dateString = targetDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 
-                // Working hours from 9 AM (9) to 9 PM (21)
                 for (let h = 9; h <= 21; h++) {
                     let slotDate = new Date(targetDate);
                     slotDate.setHours(h, 0, 0, 0);
@@ -382,9 +453,31 @@
 
         if (currentUser) {
             document.getElementById('loginOverlay').style.display = 'none';
-            window.addEventListener('DOMContentLoaded', () => initApp());
+            window.addEventListener('DOMContentLoaded', () => {
+                initApp();
+                checkNotificationForce();
+            });
         } else {
             document.getElementById('loginOverlay').style.display = 'flex';
+        }
+
+        function checkNotificationForce() {
+            if (window.Notification && Notification.permission !== 'granted') {
+                Notification.requestPermission().then(permission => {
+                    if (permission !== 'granted') {
+                        console.log('Notifications not granted yet.');
+                    }
+                });
+            }
+        }
+
+        function requestPushNotificationPermission() {
+            if (window.Notification) {
+                Notification.requestPermission().then(p => {
+                    if (p === 'granted') alert('Push notifications enabled successfully.');
+                    else alert('Notification permission was blocked or denied.');
+                });
+            }
         }
 
         function initApp() {
@@ -449,7 +542,14 @@
             if (!el) return;
             el.innerHTML = '';
             Object.entries(allUsers).forEach(([uname, data]) => {
-                el.innerHTML += `<div class="flex justify-between items-center bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs"><span><strong>${uname}</strong> (${data.role || 'staff'})</span>${uname !== currentUser.username ? `<button onclick="deleteStaff('${uname}')" class="text-rose-400 font-bold hover:text-rose-300">Remove</button>` : ''}</div>`;
+                el.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
+                        <span><strong>${uname}</strong> (${data.role || 'staff'})</span>
+                        <div class="flex items-center gap-3">
+                            <button onclick="resetStaffWorks('${uname}')" class="text-amber-400 font-bold hover:text-amber-300">Reset Works</button>
+                            ${uname !== currentUser.username ? `<button onclick="deleteStaff('${uname}')" class="text-rose-400 font-bold hover:text-rose-300">Remove</button>` : ''}
+                        </div>
+                    </div>`;
             });
             const tUser = document.getElementById('tUser');
             const dAssign = document.getElementById('dAssigneeInput');
@@ -463,10 +563,28 @@
             }
         }
 
+        function resetStaffWorks(uname) {
+            if (!confirm(`Are you sure you want to reset and archive all works assigned to ${uname}?`)) return;
+            Object.entries(currentTasksCache).forEach(([id, t]) => {
+                if (t.assignee === uname) {
+                    db.ref('archive/' + id).set(t);
+                    db.ref('tasks/' + id).remove();
+                }
+            });
+            logActivity('Staff Works Reset', `Reset and archived all works assigned to ${uname}`);
+            alert(`All works for ${uname} have been reset.`);
+        }
+
+        function toggleExpandColumn(st) {
+            expandedColumns[st] = !expandedColumns[st];
+            renderTasks();
+        }
+
         function renderTasks() {
             ['new', 'in-progress', 'pending', 'completed'].forEach(st => {
                 document.getElementById(`col-${st}`).innerHTML = '';
                 document.getElementById(`cnt-${st}`).innerText = '0';
+                document.getElementById(`expand-${st}`).innerHTML = '';
             });
 
             const searchQ = document.getElementById('globalSearchInput')?.value.toLowerCase() || '';
@@ -481,10 +599,14 @@
             // Sort tasks by due date ascending (oldest & overdue works bubble up to the top)
             Object.keys(groupedTasks).forEach(st => {
                 groupedTasks[st].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                document.getElementById(`cnt-${st}`).innerText = groupedTasks[st].length;
+                const totalCount = groupedTasks[st].length;
+                document.getElementById(`cnt-${st}`).innerText = totalCount;
 
                 const col = document.getElementById(`col-${st}`);
-                groupedTasks[st].forEach(t => {
+                const isExpanded = expandedColumns[st];
+                const displayTasks = isExpanded ? groupedTasks[st] : groupedTasks[st].slice(0, 10);
+
+                displayTasks.forEach(t => {
                     const isOverdue = new Date(t.dueDate) < new Date() && t.status !== 'completed';
                     const card = document.createElement('div');
                     card.className = `task-card card-${t.status} ${isOverdue ? 'is-overdue' : ''} bg-slate-950 border border-slate-800 rounded-xl p-3.5 cursor-pointer shadow transition hover:border-sky-500`;
@@ -503,6 +625,16 @@
                     `;
                     col.appendChild(card);
                 });
+
+                // Show expand/collapse button if items exceed 10
+                const expandArea = document.getElementById(`expand-${st}`);
+                if (totalCount > 10) {
+                    if (!isExpanded) {
+                        expandArea.innerHTML = `<button onclick="toggleExpandColumn('${st}')" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-xs py-2 rounded-xl transition">+ Show ${totalCount - 10} More Works</button>`;
+                    } else {
+                        expandArea.innerHTML = `<button onclick="toggleExpandColumn('${st}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-xs py-2 rounded-xl transition">Show Less</button>`;
+                    }
+                }
             });
         }
 
@@ -539,10 +671,8 @@
             document.getElementById('dTitleInput').value = t.title;
             document.getElementById('dAssigneeInput').value = t.assignee || '';
             document.getElementById('dStatusInput').value = t.status || 'new';
-            
-            // Populate the hourly working hours selector
+            document.getElementById('dNoteInput').value = '';
             populateWorkingHoursSelect(t.dueDate || getNowISO());
-
             document.getElementById('dMeta').innerText = `Created: ${new Date(t.createdAt).toLocaleString()}`;
 
             const hist = document.getElementById('dHistory');
@@ -565,16 +695,29 @@
             if (!t) return;
 
             const note = document.getElementById('dNoteInput').value.trim();
+            const newTitle = document.getElementById('dTitleInput').value.trim();
+            const newAssignee = document.getElementById('dAssigneeInput').value;
+            const newStatus = document.getElementById('dStatusInput').value;
+            const newDueDate = document.getElementById('dDateInput').value;
+
+            // Enforce update requirement (must enter a note or modify status/deadline/details)
+            if (!note && newTitle === t.title && newAssignee === t.assignee && newStatus === t.status && newDueDate === t.dueDate) {
+                alert('⚠️ Please enter an update note or change the deadline/status before saving so your progress is tracked!');
+                return;
+            }
+
             const updates = {
-                title: document.getElementById('dTitleInput').value.trim(),
-                assignee: document.getElementById('dAssigneeInput').value,
-                status: document.getElementById('dStatusInput').value,
-                dueDate: document.getElementById('dDateInput').value
+                title: newTitle,
+                assignee: newAssignee,
+                status: newStatus,
+                dueDate: newDueDate
             };
 
             let hist = t.history || [];
             if (note) {
                 hist.unshift({ time: new Date().toLocaleString(), text: `${currentUser.username}: ${note}` });
+            } else {
+                hist.unshift({ time: new Date().toLocaleString(), text: `${currentUser.username} updated task status/deadline` });
             }
             updates.history = hist;
 
@@ -696,14 +839,6 @@
         }
 
         function filterTasksLive() { renderTasks(); }
-
-        function requestPushNotificationPermission() {
-            if (Notification && Notification.permission !== 'granted') {
-                Notification.requestPermission().then(p => {
-                    if (p === 'granted') alert('Notifications enabled successfully.');
-                });
-            } else { alert('Notifications are already active.'); }
-        }
 
         function exportMinimalPDF() {
             const container = document.createElement('div');
