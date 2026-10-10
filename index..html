@@ -37,9 +37,6 @@
         .tag-moderate { background: var(--pri-moderate); }
         .tag-upcoming { background: var(--pri-upcoming); }
 
-        .task-card.is-stale { border-right: 5px solid var(--alert) !important; background-color: #fff4f4; }
-        .stale-badge { background: var(--alert); color: white; font-size: 8px; padding: 2px 5px; border-radius: 4px; font-weight: 800; text-transform: uppercase; display: inline-block; margin-left: 5px; }
-
         .time-box { background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
         .shortcut-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
         .btn-time { flex: 1; min-width: 70px; padding: 8px 10px; font-size: 11px; font-weight: 700; background: #edf2f7; color: #4a5568; border: 1px solid #cbd5e0; border-radius: 6px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
@@ -71,15 +68,6 @@
         .view-list .kanban-board { flex-direction: column; gap: 20px; }
         .view-list .kanban-col { width: 100%; min-width: 100%; min-height: auto; }
         .view-list .kanban-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
-
-        .view-compact .task-card { padding: 8px 12px; }
-        .view-compact .card-title { font-size: 0.85rem; margin-bottom: 4px; }
-
-        .view-minimal .task-card { padding: 6px 10px; border-left-width: 3px; }
-        .view-minimal .card-title { font-size: 0.8rem; margin-bottom: 2px; }
-
-        .view-details .task-card { padding: 16px; border-left-width: 8px; }
-        .view-details .card-title { font-size: 1.15rem; margin-bottom: 10px; }
 
         .drawer, .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: flex-end; }
         .modal { justify-content: center; align-items: center; }
@@ -117,9 +105,6 @@
 
         .settings-tab-btn { flex: 1; padding: 8px; border: 1px solid #ddd; background: #f8f9fa; cursor: pointer; font-size: 11px; font-weight: bold; }
         .settings-tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        .expand-btn { background: #edf2f7; color: var(--primary); border: 1px dashed #cbd5e0; padding: 8px; border-radius: 8px; width: 100%; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; margin-top: 5px; transition: 0.2s; }
-        .expand-btn:hover { background: #cbd5e0; }
 
         @media (max-width: 768px) {
             header { flex-direction: column; align-items: flex-start; gap: 15px; }
@@ -180,14 +165,12 @@
         </div>
     </header>
 
-    <!-- RAPID TASK CREATION FORM (Explicit Project Selection Required) -->
-    <div id="taskFormArea" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px; display:none; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+    <!-- RAPID TASK CREATION FORM -->
+    <div id="taskFormArea" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
         <form id="taskForm" onsubmit="createTask(event)">
             <div class="rapid-form-grid">
                 <input type="text" id="tTitle" placeholder="⚡ Quick Work Description..." required class="update-input" style="margin:0; font-weight:bold;">
-                <select id="tProject" class="update-input" style="margin:0;" required>
-                    <option value="" disabled selected>-- Select Project --</option>
-                </select>
+                <select id="tProject" class="update-input" style="margin:0;"></select>
                 <select id="tCategory" class="update-input" style="margin:0;">
                     <option value="" disabled selected>-- Select Category --</option>
                 </select>
@@ -216,9 +199,7 @@
 
     <!-- PROJECT, CATEGORY & STATUS FILTERS -->
     <div style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap;">
-        <select id="projectFilter" class="update-input" style="margin:0; flex:1; min-width:150px;" onchange="filterTasksLive()">
-            <option value="all">All Projects</option>
-        </select>
+        <select id="projectFilter" class="update-input" style="margin:0; flex:1; min-width:150px;" onchange="filterTasksLive()"></select>
         <select id="categoryFilter" class="update-input" style="margin:0; flex:1; min-width:150px;" onchange="filterTasksLive()">
             <option value="all">All Categories</option>
         </select>
@@ -233,8 +214,8 @@
 
     <!-- TRACK STAFF & DASHBOARD VIEW MODES -->
     <div class="filter-section">
-        <div class="admin-only" id="adminStaffFilter" style="flex:1;">
-            <span class="filter-label">Track Staff (Drag to scroll)</span>
+        <div style="flex:1;">
+            <span class="filter-label">Filter Assignment (Drag to scroll)</span>
             <div class="filter-group" id="teamFilterBar"></div>
         </div>
 
@@ -243,9 +224,6 @@
             <div class="filter-group">
                 <button class="filter-btn active" id="vbtn-kanban" onclick="setViewMode('kanban')">📋 Board</button>
                 <button class="filter-btn" id="vbtn-list" onclick="setViewMode('list')">📄 List</button>
-                <button class="filter-btn" id="vbtn-compact" onclick="setViewMode('compact')">⚡ Compact</button>
-                <button class="filter-btn" id="vbtn-minimal" onclick="setViewMode('minimal')">🔹 Minimal</button>
-                <button class="filter-btn" id="vbtn-details" onclick="setViewMode('details')">📊 Detailed</button>
             </div>
         </div>
     </div>
@@ -255,22 +233,18 @@
         <div class="kanban-col" data-status="new" ondrop="drop(event)" ondragover="allowDrop(event)">
             <div class="kanban-header">New <span id="cnt-new">0</span></div>
             <div class="kanban-cards" id="col-new"></div>
-            <div id="expand-new"></div>
         </div>
         <div class="kanban-col" data-status="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
             <div class="kanban-header">In Progress <span id="cnt-in-progress">0</span></div>
             <div class="kanban-cards" id="col-in-progress"></div>
-            <div id="expand-in-progress"></div>
         </div>
         <div class="kanban-col" data-status="pending" ondrop="drop(event)" ondragover="allowDrop(event)">
             <div class="kanban-header">Pending <span id="cnt-pending">0</span></div>
             <div class="kanban-cards" id="col-pending"></div>
-            <div id="expand-pending"></div>
         </div>
         <div class="kanban-col" data-status="completed" ondrop="drop(event)" ondragover="allowDrop(event)">
             <div class="kanban-header">Completed <span id="cnt-completed">0</span></div>
             <div class="kanban-cards" id="col-completed"></div>
-            <div id="expand-completed"></div>
         </div>
     </div>
 </div>
@@ -285,9 +259,7 @@
         </div>
         
         <div style="display:flex; gap:8px; margin-bottom:10px;">
-            <select id="dProjectInput" class="update-input" style="margin:0; flex:1;" required>
-                <option value="" disabled selected>-- Select Project --</option>
-            </select>
+            <select id="dProjectInput" class="update-input" style="margin:0; flex:1;" required></select>
             <select id="dCategoryInput" class="update-input" style="margin:0; flex:1;"></select>
         </div>
         
@@ -398,7 +370,7 @@
             <div id="staffListUI" style="max-height:200px; overflow-y:auto; border:1px solid #eee; border-radius:8px; padding:5px;"></div>
         </div>
 
-        <!-- PROJECTS TAB (ALL USERS CAN ADD, ONLY ADMIN CAN DELETE) -->
+        <!-- PROJECTS TAB -->
         <div id="settingsSectionProjects">
             <div style="display:flex; gap:8px;">
                 <input type="text" id="newProjectName" placeholder="New Project Name" class="update-input" style="margin:0; flex:1;">
@@ -407,7 +379,7 @@
             <div id="projectListUI" style="max-height:220px; overflow-y:auto; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:10px;"></div>
         </div>
 
-        <!-- CATEGORIES TAB (ALL USERS CAN ADD, ONLY ADMIN CAN DELETE) -->
+        <!-- CATEGORIES TAB -->
         <div id="settingsSectionCategories" style="display:none;">
             <div style="display:flex; gap:8px;">
                 <input type="text" id="newCategoryName" placeholder="New Category Name" class="update-input" style="margin:0; flex:1;">
@@ -423,7 +395,9 @@
 <script>
     // FIREBASE INITIALIZATION
     const firebaseConfig = { databaseURL: "https://task-76764-default-rtdb.firebaseio.com/" };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.database();
 
     // SESSION HANDLING
@@ -455,14 +429,12 @@
     let archivedTasksCache = {};
     let currentOpenTaskId = null;
     let activeChatPartner = '';
-    let currentChatRef = null;
     let mediaRecorder;
     let audioChunks = [];
     let isRecording = false;
 
-    // VIEW MODES & EXPAND CONTROLS
+    // VIEW MODES
     let currentViewMode = 'kanban';
-    let expandedSections = { 'new': false, 'in-progress': false, 'pending': false, 'completed': false };
 
     // DRAG SCROLL FOR TEAM FILTER
     const slider = document.getElementById('teamFilterBar');
@@ -487,45 +459,40 @@
     function setQuickDate(inputId, type) {
         const input = document.getElementById(inputId);
         let date = new Date();
-        if (type === 'plus1') { date.setHours(date.getHours() + 1); }
-        else if (type === 'today6pm') { date.setHours(18,0,0,0); }
-        else if (type === 'tomorrow') { date.setDate(date.getDate() + 1); date.setHours(9,0,0,0); }
-        else if (type === 'plus2') { date.setHours(date.getHours() + 2); }
+        if (type === 'plus1') {
+            date.setHours(date.getHours() + 1);
+        } else if (type === 'plus2') {
+            date.setHours(date.getHours() + 2);
+        } else if (type === 'today6pm') {
+            date.setHours(18, 0, 0, 0);
+        } else if (type === 'tomorrow') {
+            date.setDate(date.getDate() + 1);
+            date.setHours(9, 0, 0, 0);
+        }
         date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
         input.value = date.toISOString().slice(0, 16);
     }
 
-    // REALTIME SETTINGS SYNC
-    db.ref('users').on('value', snap => {
-        allUsers = snap.val() || {};
-        updateTeamFilters();
-        updateUserDropdowns();
-        updateChatUserList();
-        renderStaffList();
-    });
-
-    db.ref('settings/projects').on('value', snap => {
-        systemProjects = snap.val() || { 'Raichandani Mall': true, 'General Site': true };
-        renderProjectsList();
-        populateProjectDropdowns();
-    });
-
-    db.ref('settings/categories').on('value', snap => {
-        systemCategories = snap.val() || { 'Interior Design': true, 'Modular Work': true, 'Civil / Electrical': true };
-        renderCategoriesList();
-        populateCategoryDropdowns();
-    });
-
-    if (currentUser) startApp();
-
+    // Authentication & Initialization
     function handleLogin() {
-        const u = document.getElementById('userIn').value.toLowerCase().trim();
-        const p = document.getElementById('passIn').value;
-        if (allUsers[u] && allUsers[u].password === p) {
-            currentUser = { name: u, role: allUsers[u].role || 'staff' };
-            setSession(currentUser);
-            startApp();
-        } else { alert("Login failed. Check credentials."); }
+        const user = document.getElementById('userIn').value.trim();
+        const pass = document.getElementById('passIn').value.trim();
+        if (!user || !pass) {
+            alert('Please enter username and password.');
+            return;
+        }
+        db.ref('users/' + user).once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.pass === pass) {
+                const userData = { username: user, role: data.role || 'staff' };
+                setSession(userData);
+                currentUser = userData;
+                document.getElementById('loginOverlay').style.display = 'none';
+                initApp();
+            } else {
+                alert('Invalid credentials.');
+            }
+        });
     }
 
     function logout() {
@@ -534,834 +501,758 @@
         location.reload();
     }
 
-    function startApp() {
+    if (currentUser) {
         document.getElementById('loginOverlay').style.display = 'none';
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+        });
+    } else {
+        document.getElementById('loginOverlay').style.display = 'flex';
+    }
+
+    function initApp() {
+        if (!currentUser) return;
+        
+        activeFilters.team = currentUser.username;
+
         document.getElementById('mainApp').style.display = 'block';
-        document.getElementById('welcomeMsg').innerText = "Logged as: " + currentUser.name.toUpperCase();
-        document.getElementById('taskFormArea').style.display = 'block';
-        setQuickDate('tDate', 'now');
+        document.getElementById('welcomeMsg').innerText = `Welcome, ${currentUser.username} (${currentUser.role.toUpperCase()})`;
         
-        if (currentUser.role === 'admin' || currentUser.name === 'admin' || currentUser.name === 'chetan') {
-            currentUser.role = 'admin';
+        if (currentUser.role === 'admin') {
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-            if (!activeFilters.team) {
-                const firstStaff = Object.keys(allUsers).find(n => n !== 'admin');
-                if (firstStaff) activeFilters.team = firstStaff;
-            }
-        } else { 
-            activeFilters.team = currentUser.name; 
+        } else {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
         }
 
-        // Default assignee to self for non-admin staff
-        const tUserSel = document.getElementById('tUser');
-        if (tUserSel && currentUser.role !== 'admin') {
-            tUserSel.value = currentUser.name;
-        }
-        
-        syncTasks();
-        syncArchivedTasks();
-        listenForUnreadMessages();
+        const tDateEl = document.getElementById('tDate');
+        if (tDateEl) tDateEl.value = getNowISO();
+
+        loadSettings();
+        loadTasks();
+        setupRealtimeListeners();
     }
 
-    // HEADER TOGGLES
-    function toggleHeaderSearch() {
-        const popup = document.getElementById('headerSearchPopup');
-        const isVisible = popup.style.display === 'block';
-        popup.style.display = isVisible ? 'none' : 'block';
-        if (!isVisible) document.getElementById('globalSearchInput').focus();
-    }
-
-    function toggleActivityModal(show) {
-        document.getElementById('activityModal').style.display = show ? 'flex' : 'none';
-    }
-
-    // DASHBOARD VIEW MODE TOGGLE
-    function setViewMode(mode) {
-        currentViewMode = mode;
-        const mainContainer = document.getElementById('mainApp');
-        mainContainer.classList.remove('view-kanban', 'view-list', 'view-compact', 'view-minimal', 'view-details');
-        mainContainer.classList.add(`view-${mode}`);
-
-        ['kanban', 'list', 'compact', 'minimal', 'details'].forEach(m => {
-            const btn = document.getElementById(`vbtn-${m}`);
-            if (btn) btn.classList.toggle('active', m === mode);
-        });
-
-        filterTasksLive();
-    }
-
-    function toggleSectionExpand(status) {
-        expandedSections[status] = !expandedSections[status];
-        filterTasksLive();
-    }
-
-    // PUSH NOTIFICATIONS
-    function requestPushNotificationPermission() {
-        if (!("Notification" in window)) {
-            alert("Push notifications are not supported in this browser.");
-            return;
-        }
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                new Notification("Urban Casa Command Center", { body: "Notifications enabled!", icon: "https://cdn-icons-png.flaticon.com/512/3233/3233483.png" });
-                alert("Desktop/Mobile push notifications enabled!");
-            } else { alert("Notification permission denied."); }
-        });
-    }
-
-    function triggerPushAlert(title, bodyText) {
-        playRingSound();
-        if (Notification.permission === "granted") {
-            try { new Notification(title, { body: bodyText, icon: "https://cdn-icons-png.flaticon.com/512/3233/3233483.png" }); }
-            catch(e) {}
-        }
-    }
-
-    function playRingSound() {
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const playNote = (freq, delay) => {
-                const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.type = 'triangle'; osc.frequency.value = freq;
-                gain.gain.setValueAtTime(0, ctx.currentTime + delay);
-                gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + delay + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + 0.3);
-                osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.4);
+    function loadSettings() {
+        db.ref('settings').on('value', (snapshot) => {
+            const val = snapshot.val() || {};
+            systemProjects = val.projects || { 
+                "My Tasks (General)": true,
+                "Urban Casa - Kompally": true, 
+                "Urban Casa - General": true 
             };
-            playNote(523.25, 0); playNote(659.25, 0.15); playNote(783.99, 0.3);      
-        } catch (e) {}
-    }
-
-    // TASK SYNC & GLOBAL FILTERING
-    let initialTaskSync = true;
-    function syncTasks() {
-        db.ref('tasks').on('value', snap => {
-            const newTasks = snap.val() || {};
-            if (!initialTaskSync) {
-                Object.keys(newTasks).forEach(id => {
-                    if (!currentTasksCache[id] && newTasks[id].assignedTo === currentUser.name) {
-                        triggerPushAlert("New Task Assigned!", newTasks[id].title);
-                    }
-                });
-            }
-            initialTaskSync = false;
-            currentTasksCache = newTasks;
-            filterTasksLive();
-        });
-    }
-
-    function syncArchivedTasks() {
-        db.ref('archived_tasks').on('value', snap => {
-            archivedTasksCache = snap.val() || {};
-            renderArchiveList();
-        });
-    }
-
-    function populateProjectDropdowns() {
-        const pList = Object.keys(systemProjects);
-        ['tProject', 'dProjectInput', 'projectFilter'].forEach(id => {
-            const sel = document.getElementById(id);
-            if (!sel) return;
-            const cur = sel.value;
-            sel.innerHTML = id === 'projectFilter' ? `<option value="all">All Projects</option>` : `<option value="" disabled selected>-- Select Project --</option>`;
-            pList.forEach(p => { sel.innerHTML += `<option value="${p}">${p}</option>`; });
-            if (cur && (cur === 'all' || pList.includes(cur))) sel.value = cur;
-        });
-    }
-
-    function populateCategoryDropdowns() {
-        const cList = Object.keys(systemCategories);
-        ['tCategory', 'dCategoryInput', 'categoryFilter'].forEach(id => {
-            const sel = document.getElementById(id);
-            if (!sel) return;
-            const cur = sel.value;
-            sel.innerHTML = id === 'categoryFilter' ? `<option value="all">All Categories</option>` : `<option value="" disabled selected>-- Select Category --</option>`;
-            cList.forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
-            if (cur && (cur === 'all' || cList.includes(cur))) sel.value = cur;
-        });
-    }
-
-    function filterTasksLive() {
-        const globalSearch = (document.getElementById('globalSearchInput')?.value || '').toLowerCase();
-        const status = document.getElementById('statusFilter').value;
-        const project = document.getElementById('projectFilter').value;
-        const category = document.getElementById('categoryFilter').value;
-        
-        let filtered = {};
-        Object.keys(currentTasksCache).forEach(id => {
-            const t = currentTasksCache[id];
-            const matchesTeam = (currentUser.role === 'admin' && activeFilters.team === 'ALL') || 
-                                (t.assignedTo && t.assignedTo.toLowerCase() === activeFilters.team.toLowerCase());
+            systemCategories = val.categories || { 
+                "Design": true, 
+                "Execution": true, 
+                "Procurement": true, 
+                "Client Follow-up": true,
+                "General": true
+            };
             
-            const matchesSearch = !globalSearch || 
-                (t.title && t.title.toLowerCase().includes(globalSearch)) || 
-                (t.assignedTo && t.assignedTo.toLowerCase().includes(globalSearch)) ||
-                (t.project && t.project.toLowerCase().includes(globalSearch)) ||
-                (t.category && t.category.toLowerCase().includes(globalSearch)) ||
-                (t.priority && t.priority.toLowerCase().includes(globalSearch));
-
-            const matchesStatus = status === 'all' || t.status === status;
-            const matchesProject = project === 'all' || t.project === project;
-            const matchesCategory = category === 'all' || t.category === category;
-
-            if (matchesTeam && matchesSearch && matchesStatus && matchesProject && matchesCategory) {
-                filtered[id] = t;
-            }
+            updateDropdowns();
         });
 
-        renderKanbanCards(filtered);
+        db.ref('users').on('value', (snapshot) => {
+            allUsers = snapshot.val() || {};
+            updateTeamFilters();
+            updateDropdowns();
+        });
     }
 
-    function renderKanbanCards(tasks) {
-        ['new', 'in-progress', 'pending', 'completed'].forEach(col => {
-            const el = document.getElementById(`col-${col}`);
-            const expEl = document.getElementById(`expand-${col}`);
-            if (el) el.innerHTML = '';
-            if (expEl) expEl.innerHTML = '';
-        });
-
-        const priorityWeight = { 'Urgent': 3, 'Moderate': 2, 'Upcoming': 1 };
-        const now = Date.now();
-        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
-
-        let taskList = Object.keys(tasks || {}).map(id => ({ id, ...tasks[id] }));
-
-        taskList.sort((a, b) => {
-            const priA = priorityWeight[a.priority] || 0;
-            const priB = priorityWeight[b.priority] || 0;
-            if (priA !== priB) return priB - priA;
-
-            const dateA = new Date(a.dueDate || a.createdAt || 0).getTime();
-            const dateB = new Date(b.dueDate || b.createdAt || 0).getTime();
-            return dateA - dateB;
-        });
-
-        let totalCount = 0;
-        ['new', 'in-progress', 'pending', 'completed'].forEach(st => {
-            const colTasks = taskList.filter(t => t.status === st);
-            const count = colTasks.length;
-            totalCount += count;
-            const badge = document.getElementById(`cnt-${st}`);
-            if (badge) badge.innerText = count;
-
-            const col = document.getElementById(`col-${st}`);
-            const expCol = document.getElementById(`expand-${st}`);
-            if (!col) return;
-
-            const isExpanded = expandedSections[st];
-            const visibleTasks = isExpanded ? colTasks : colTasks.slice(0, 10);
-
-            visibleTasks.forEach(task => {
-                const lastUpdated = task.updatedAt || task.createdAt || 0;
-                const isStale = (task.status !== 'completed') && ((now - new Date(lastUpdated).getTime()) > THREE_DAYS_MS);
-
-                let cardContent = '';
-                if (currentViewMode === 'minimal') {
-                    cardContent = `
-                        <div class="task-card card-${task.status} ${isStale ? 'is-stale' : ''}" id="card-${task.id}" onclick="openDrawer('${task.id}')">
-                            <div class="card-title" style="margin:0; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
-                                <span>${task.title}</span>
-                                <span style="font-size:9px; opacity:0.7;">${task.assignedTo ? task.assignedTo.toUpperCase() : ''}</span>
-                            </div>
-                        </div>`;
-                } else if (currentViewMode === 'compact') {
-                    cardContent = `
-                        <div class="task-card card-${task.status} ${isStale ? 'is-stale' : ''}" id="card-${task.id}" onclick="openDrawer('${task.id}')">
-                            <div class="card-title">${task.title}</div>
-                            <div style="font-size:10px; color:#666; display:flex; justify-content:space-between;">
-                                <span>📁 ${task.project || 'General'}</span>
-                                <span>👤 ${task.assignedTo ? task.assignedTo.toUpperCase() : ''}</span>
-                            </div>
-                        </div>`;
-                } else {
-                    cardContent = `
-                        <div class="task-card card-${task.status} ${isStale ? 'is-stale' : ''}" 
-                             draggable="true" ondragstart="drag(event, '${task.id}')" 
-                             id="card-${task.id}" onclick="openDrawer('${task.id}')">
-                            
-                            <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; color:var(--accent); text-transform:uppercase; margin-bottom:4px;">
-                                <span>📁 ${task.project || 'General'}</span>
-                                <span style="color:#718096;">🏷️ ${task.category || 'General'}</span>
-                            </div>
-                            <div class="card-title">
-                                ${task.title}
-                                ${isStale ? '<span class="stale-badge">⚠️ IDLE >3 DAYS</span>' : ''}
-                            </div>
-                            
-                            <div style="font-size:11px; color:#666; display:flex; justify-content:space-between; align-items:center;">
-                                <span>👤 ${task.assignedTo ? task.assignedTo.toUpperCase() : 'UNASSIGNED'}</span>
-                                <span class="pri-tag tag-${(task.priority || 'moderate').toLowerCase()}">${task.priority || 'Moderate'}</span>
-                            </div>
-                            
-                            <div style="font-size:10px; color:#999; margin-top:6px;">
-                                📅 ${task.dueDate ? new Date(task.dueDate).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : 'No date'}
-                            </div>
-                        </div>`;
+    function updateDropdowns() {
+        const projSelects = ['tProject', 'projectFilter', 'dProjectInput'];
+        projSelects.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const currentVal = el.value;
+            let html = id === 'projectFilter' ? '<option value="all">All Projects</option>' : '<option value="" disabled>-- Select Project --</option>';
+            
+            // ALWAYS PIN "My Tasks (General)" TO THE FIRST POSITION FOR ALL USERS
+            html += `<option value="My Tasks (General)">📌 My Tasks (General)</option>`;
+            
+            for (let p in systemProjects) {
+                if (p !== "My Tasks (General)") {
+                    html += `<option value="${p}">${p}</option>`;
                 }
-
-                col.innerHTML += cardContent;
-            });
-
-            if (count > 10 && expCol) {
-                const hiddenCount = count - 10;
-                expCol.innerHTML = `
-                    <button class="expand-btn" onclick="toggleSectionExpand('${st}')">
-                        ${isExpanded ? '▲ Collapse Section' : `📂 View All ${count} Works (${hiddenCount} More)`}
-                    </button>`;
             }
+            el.innerHTML = html;
+            el.value = currentVal || (id === 'tProject' ? 'My Tasks (General)' : (id === 'projectFilter' ? 'all' : ''));
         });
 
-        document.getElementById('taskBadge').innerText = totalCount;
+        const catSelects = ['tCategory', 'categoryFilter', 'dCategoryInput'];
+        catSelects.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const currentVal = el.value;
+            let html = id === 'categoryFilter' ? '<option value="all">All Categories</option>' : '<option value="" disabled selected>-- Select Category --</option>';
+            for (let c in systemCategories) {
+                html += `<option value="${c}">${c}</option>`;
+            }
+            el.innerHTML = html;
+            el.value = currentVal;
+        });
+
+        const userSelects = ['tUser', 'dAssigneeInput', 'chatUserSelect'];
+        userSelects.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const currentVal = el.value;
+            let html = '';
+            if (id === 'chatUserSelect') {
+                html = '<option value="" disabled selected>-- Select Staff Chat --</option>';
+            }
+            for (let u in allUsers) {
+                if (id !== 'chatUserSelect' || u !== currentUser.username) {
+                    html += `<option value="${u}">${u}</option>`;
+                }
+            }
+            el.innerHTML = html;
+            el.value = currentVal || (id === 'tUser' ? currentUser.username : '');
+        });
     }
 
-    // RAPID TASK CREATION & VALIDATION WITH CONFIRMATION
+    function updateTeamFilters() {
+        const bar = document.getElementById('teamFilterBar');
+        if (!bar) return;
+        const myUsername = currentUser ? currentUser.username : '';
+
+        let html = `
+            <button class="filter-btn ${activeFilters.team === myUsername ? 'active' : ''}" 
+                    onclick="filterByTeam('${myUsername}')" 
+                    style="background: #27ae60; color: white; border-color: #27ae60;">
+                👤 My Tasks
+            </button>
+            <button class="filter-btn ${activeFilters.team === '' ? 'active' : ''}" 
+                    onclick="filterByTeam('')">
+                🌐 All Staff
+            </button>
+        `;
+
+        if (currentUser && currentUser.role === 'admin') {
+            for (let u in allUsers) {
+                if (u !== myUsername) {
+                    html += `<button class="filter-btn ${activeFilters.team === u ? 'active' : ''}" onclick="filterByTeam('${u}')">${u}</button>`;
+                }
+            }
+        }
+        bar.innerHTML = html;
+    }
+
+    function filterByTeam(username) {
+        activeFilters.team = username;
+        updateTeamFilters();
+        renderTasks();
+    }
+
+    function loadTasks() {
+        db.ref('tasks').on('value', (snapshot) => {
+            currentTasksCache = snapshot.val() || {};
+            renderTasks();
+        });
+
+        db.ref('archive').on('value', (snapshot) => {
+            archivedTasksCache = snapshot.val() || {};
+            renderArchiveModalList();
+        });
+    }
+
+    function setupRealtimeListeners() {
+        db.ref('messages/' + currentUser.username).on('value', (snapshot) => {
+            const msgs = snapshot.val() || {};
+            let unread = false;
+            for (let sender in msgs) {
+                if (msgs[sender].unread) unread = true;
+            }
+            const badge = document.getElementById('msgBadge');
+            if (badge) badge.style.display = unread ? 'block' : 'none';
+        });
+    }
+
+    // Task Creation & Management
     function createTask(e) {
         e.preventDefault();
         const title = document.getElementById('tTitle').value.trim();
-        const project = document.getElementById('tProject').value;
-        const category = document.getElementById('tCategory').value || 'General';
-        const assignedTo = document.getElementById('tUser').value;
+        const project = document.getElementById('tProject').value || "My Tasks (General)";
+        const category = document.getElementById('tCategory').value || "General";
+        const assignee = document.getElementById('tUser').value || currentUser.username;
         const priority = document.getElementById('tPriority').value;
-        const dueDate = document.getElementById('tDate').value;
+        const date = document.getElementById('tDate').value;
 
-        if (!project) {
-            alert("Please select a project before assigning.");
-            return;
-        }
-
-        if (!confirm(`Are you sure you want to assign task "${title}" to ${assignedTo.toUpperCase()} under project "${project}"?`)) {
+        if (!title) {
+            alert('Please provide a task description.');
             return;
         }
 
         const newTaskRef = db.ref('tasks').push();
-        const now = Date.now();
-        newTaskRef.set({
-            title, project, category, assignedTo, priority, dueDate,
+        const taskId = newTaskRef.key;
+
+        const taskData = {
+            id: taskId,
+            title: title,
+            project: project,
+            category: category,
+            assignee: assignee,
+            priority: priority,
+            dueDate: date,
             status: 'new',
-            createdAt: now,
-            updatedAt: now,
-            history: [{ text: `Task created under project [${project.toUpperCase()}] / category [${category.toUpperCase()}] and assigned to ${assignedTo.toUpperCase()}`, user: currentUser.name, date: now }]
-        }).then(() => {
-            document.getElementById('tTitle').value = '';
-            document.getElementById('tProject').selectedIndex = 0;
-            document.getElementById('tCategory').selectedIndex = 0;
-            setQuickDate('tDate', 'now');
-            triggerPushAlert("New Task Assigned", title);
-            logActivity(`Created task: "${title}" (${project}) for ${assignedTo.toUpperCase()}`);
+            createdBy: currentUser.username,
+            createdAt: new Date().toISOString(),
+            history: {
+                [Date.now()]: {
+                    user: currentUser.username,
+                    text: `Created task assigned to ${assignee}`,
+                    timestamp: new Date().toISOString()
+                }
+            }
+        };
+
+        newTaskRef.set(taskData, (error) => {
+            if (error) {
+                alert('Failed to create task.');
+            } else {
+                document.getElementById('taskForm').reset();
+                document.getElementById('tDate').value = getNowISO();
+                document.getElementById('tProject').value = 'My Tasks (General)';
+                document.getElementById('tUser').value = currentUser.username;
+                logActivity(`Created task: ${title} (${project})`);
+            }
         });
     }
 
-    function openDrawer(taskId) {
-        currentOpenTaskId = taskId;
-        const t = currentTasksCache[taskId];
-        if (!t) {
-            db.ref('tasks/' + taskId).once('value').then(snap => {
-                const taskData = snap.val();
-                if (taskData) {
-                    currentTasksCache[taskId] = taskData;
-                    populateDrawer(taskId, taskData);
-                } else { alert("Task not found."); }
-            });
-            return;
-        }
-        populateDrawer(taskId, t);
-    }
-
-    function populateDrawer(taskId, t) {
-        document.getElementById('dTitleInput').value = t.title || '';
-        document.getElementById('dProjectInput').value = t.project || '';
-        document.getElementById('dCategoryInput').value = t.category || '';
+    function renderTasks() {
+        const statuses = ['new', 'in-progress', 'pending', 'completed'];
+        const counts = { new: 0, 'in-progress': 0, pending: 0, completed: 0 };
         
-        const assigneeSel = document.getElementById('dAssigneeInput');
-        assigneeSel.value = t.assignedTo || '';
+        const projFilter = document.getElementById('projectFilter').value;
+        const catFilter = document.getElementById('categoryFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        const globalSearch = (document.getElementById('globalSearchInput')?.value || '').toLowerCase();
 
-        document.getElementById('dMeta').innerText = `Assigned To: ${(t.assignedTo || 'Unassigned').toUpperCase()} | Created: ${new Date(t.createdAt || Date.now()).toLocaleDateString()}`;
-        document.getElementById('dPriorityInput').value = t.priority || 'Moderate';
-        document.getElementById('dStatusInput').value = t.status || 'new';
-        document.getElementById('dDateInput').value = t.dueDate || getNowISO();
-
-        const histUI = document.getElementById('dHistory');
-        histUI.innerHTML = '';
-        (t.history || []).forEach(h => {
-            let noteContent = h.text || '';
-            if (h.audio) { noteContent += `<br><audio controls src="${h.audio}" style="width:100%; margin-top:5px;"></audio>`; }
-            histUI.innerHTML += `
-                <div class="history-item">
-                    <strong>${(h.user || 'system').toUpperCase()}</strong> <span style="font-size:10px; color:#999;">(${new Date(h.date || Date.now()).toLocaleString()})</span>
-                    <div>${noteContent}</div>
-                </div>
-            `;
+        statuses.forEach(status => {
+            const col = document.getElementById('col-' + status);
+            if (col) col.innerHTML = '';
         });
+
+        let totalVisible = 0;
+
+        for (let id in currentTasksCache) {
+            const task = currentTasksCache[id];
+
+            if (projFilter !== 'all' && task.project !== projFilter) continue;
+            if (catFilter !== 'all' && task.category !== catFilter) continue;
+            if (statusFilter !== 'all' && task.status !== statusFilter) continue;
+            if (activeFilters.team && task.assignee !== activeFilters.team) continue;
+            if (globalSearch && !task.title.toLowerCase().includes(globalSearch) && !task.project.toLowerCase().includes(globalSearch)) continue;
+
+            counts[task.status] = (counts[task.status] || 0) + 1;
+            totalVisible++;
+
+            const col = document.getElementById('col-' + task.status);
+            if (col) {
+                col.appendChild(createTaskCardElement(task));
+            }
+        }
+
+        for (let s in counts) {
+            const cntEl = document.getElementById('cnt-' + s);
+            if (cntEl) cntEl.innerText = counts[s];
+        }
+        const taskBadge = document.getElementById('taskBadge');
+        if (taskBadge) taskBadge.innerText = totalVisible;
+    }
+
+    function createTaskCardElement(task) {
+        const card = document.createElement('div');
+        card.className = `task-card card-${task.status}`;
+        card.draggable = true;
+        card.dataset.id = task.id;
+
+        if (task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed') {
+            card.classList.add('is-overdue');
+        }
+
+        const priClass = task.priority === 'Urgent' ? 'tag-urgent' : task.priority === 'Moderate' ? 'tag-moderate' : 'tag-upcoming';
+        
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                <span style="font-size:10px; font-weight:800; color:#555; text-transform:uppercase;">${task.project}</span>
+                <span class="pri-tag ${priClass}">${task.priority}</span>
+            </div>
+            <div class="card-title">${task.title}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#666; margin-top:8px;">
+                <span>👤 ${task.assignee}</span>
+                <span>📅 ${task.dueDate ? task.dueDate.replace('T', ' ') : 'No Date'}</span>
+            </div>
+        `;
+
+        card.addEventListener('click', () => openTaskDrawer(task.id));
+        card.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', task.id);
+        });
+
+        return card;
+    }
+
+    function allowDrop(e) {
+        e.preventDefault();
+    }
+
+    function drop(e) {
+        e.preventDefault();
+        const taskId = e.dataTransfer.getData('text/plain');
+        const col = e.target.closest('.kanban-col');
+        if (!col) return;
+        const newStatus = col.dataset.status;
+
+        if (taskId && newStatus) {
+            db.ref(`tasks/${taskId}`).update({
+                status: newStatus
+            }, () => {
+                logActivity(`Moved task ID ${taskId} to status: ${newStatus}`);
+            });
+        }
+    }
+
+    function openTaskDrawer(taskId) {
+        currentOpenTaskId = taskId;
+        const task = currentTasksCache[taskId];
+        if (!task) return;
+
+        document.getElementById('dTitleInput').value = task.title || '';
+        document.getElementById('dProjectInput').value = task.project || 'My Tasks (General)';
+        document.getElementById('dCategoryInput').value = task.category || 'General';
+        document.getElementById('dAssigneeInput').value = task.assignee || currentUser.username;
+        document.getElementById('dPriorityInput').value = task.priority || 'Moderate';
+        document.getElementById('dStatusInput').value = task.status || 'new';
+        document.getElementById('dDateInput').value = task.dueDate || '';
+        document.getElementById('dMeta').innerText = `Created by ${task.createdBy} on ${new Date(task.createdAt).toLocaleString()}`;
+
+        const historyEl = document.getElementById('dHistory');
+        let hHtml = '';
+        if (task.history) {
+            const sortedKeys = Object.keys(task.history).sort((a, b) => b - a);
+            sortedKeys.forEach(k => {
+                const h = task.history[k];
+                hHtml += `
+                    <div class="history-item">
+                        <div style="font-weight:bold; color:#333;">${h.user} <span style="font-weight:normal; color:#888; font-size:11px;">(${new Date(h.timestamp).toLocaleString()})</span></div>
+                        <div style="margin-top:2px;">${h.text}</div>
+                    </div>
+                `;
+            });
+        }
+        historyEl.innerHTML = hHtml || '<div style="color:#888; font-size:12px;">No updates yet.</div>';
 
         const delArea = document.getElementById('deleteTaskArea');
-        if (currentUser.role === 'admin' || t.assignedTo === currentUser.name) {
-            delArea.innerHTML = `<button onclick="archiveTask('${taskId}')" class="save-btn" style="background:var(--alert); font-size:11px; padding:8px;">Move to Archive / Delete</button>`;
-        } else { delArea.innerHTML = ''; }
+        if (currentUser.role === 'admin' || task.createdBy === currentUser.username) {
+            delArea.innerHTML = `<button onclick="deleteTask('${taskId}')" class="save-btn" style="background:var(--alert);">Delete / Archive Task</button>`;
+        } else {
+            delArea.innerHTML = '';
+        }
 
         document.getElementById('taskDrawer').style.display = 'flex';
     }
 
     function closeDrawer(e) {
-        if (e.target.id === 'taskDrawer') document.getElementById('taskDrawer').style.display = 'none';
+        if (e.target.id === 'taskDrawer') {
+            document.getElementById('taskDrawer').style.display = 'none';
+        }
     }
 
     function saveTaskUpdate() {
         if (!currentOpenTaskId) return;
+        const task = currentTasksCache[currentOpenTaskId];
+        if (!task) return;
+
         const newTitle = document.getElementById('dTitleInput').value.trim();
-        const newProject = document.getElementById('dProjectInput').value;
-        const newCategory = document.getElementById('dCategoryInput').value;
-        const newAssignee = currentUser.role === 'admin' ? document.getElementById('dAssigneeInput').value : currentTasksCache[currentOpenTaskId].assignedTo;
-        const note = document.getElementById('dNoteInput').value.trim();
+        const newProject = document.getElementById('dProjectInput').value || 'My Tasks (General)';
+        const newCategory = document.getElementById('dCategoryInput').value || 'General';
+        const newAssignee = document.getElementById('dAssigneeInput').value || task.assignee;
         const newPriority = document.getElementById('dPriorityInput').value;
         const newStatus = document.getElementById('dStatusInput').value;
         const newDate = document.getElementById('dDateInput').value;
+        const noteText = document.getElementById('dNoteInput').value.trim();
 
-        if (!newProject) {
-            alert("Please select a project.");
-            return;
-        }
+        const updates = {
+            title: newTitle,
+            project: newProject,
+            category: newCategory,
+            assignee: newAssignee,
+            priority: newPriority,
+            status: newStatus,
+            dueDate: newDate
+        };
 
-        const t = currentTasksCache[currentOpenTaskId] || {};
-        let hist = t.history || [];
-        const now = Date.now();
+        const historyRef = db.ref(`tasks/${currentOpenTaskId}/history`).push();
+        const historyData = {
+            user: currentUser.username,
+            text: noteText ? `Updated: ${noteText}` : `Updated task details`,
+            timestamp: new Date().toISOString()
+        };
 
-        if (newTitle !== t.title) hist.push({ text: `Title changed to "${newTitle}"`, user: currentUser.name, date: now });
-        if (newProject !== t.project) hist.push({ text: `Project moved to [${newProject.toUpperCase()}]`, user: currentUser.name, date: now });
-        if (newCategory !== t.category) hist.push({ text: `Category changed to [${newCategory.toUpperCase()}]`, user: currentUser.name, date: now });
-        if (note) hist.push({ text: note, user: currentUser.name, date: now });
-        if (newStatus !== t.status) hist.push({ text: `Status updated to ${newStatus.toUpperCase()}`, user: currentUser.name, date: now });
-        if (newPriority !== t.priority) hist.push({ text: `Priority changed to ${newPriority}`, user: currentUser.name, date: now });
-
-        db.ref('tasks/' + currentOpenTaskId).update({
-            title: newTitle, project: newProject, category: newCategory,
-            assignedTo: newAssignee, priority: newPriority, status: newStatus,
-            dueDate: newDate, updatedAt: now, history: hist
-        }).then(() => {
-            document.getElementById('dNoteInput').value = '';
-            document.getElementById('taskDrawer').style.display = 'none';
-            triggerPushAlert("Task Updated", newTitle);
-            logActivity(`Updated task "${newTitle}" (${newProject})`);
+        db.ref(`tasks/${currentOpenTaskId}`).update(updates, (err) => {
+            if (!err) {
+                historyRef.set(historyData, () => {
+                    document.getElementById('dNoteInput').value = '';
+                    document.getElementById('taskDrawer').style.display = 'none';
+                    logActivity(`Updated task: ${newTitle}`);
+                });
+            } else {
+                alert('Failed to update task.');
+            }
         });
     }
 
-    // ARCHIVE & TRASH BIN
-    function archiveTask(id) {
-        if (confirm("Move this task to the Archive / Trash bin?")) {
-            const taskData = currentTasksCache[id];
-            if (!taskData) return;
-            db.ref('archived_tasks/' + id).set({
-                ...taskData, deletedBy: currentUser.name, deletedAt: Date.now()
-            }).then(() => {
-                db.ref('tasks/' + id).remove().then(() => {
+    function deleteTask(taskId) {
+        if (!confirm('Are you sure you want to archive/delete this task?')) return;
+        const task = currentTasksCache[taskId];
+        if (!task) return;
+
+        db.ref(`archive/${taskId}`).set(task, (err) => {
+            if (!err) {
+                db.ref(`tasks/${taskId}`).remove(() => {
                     document.getElementById('taskDrawer').style.display = 'none';
-                    logActivity(`Archived task: "${taskData.title}"`);
+                    logActivity(`Archived task: ${task.title}`);
                 });
+            }
+        });
+    }
+
+    // View Modes
+    function setViewMode(mode) {
+        currentViewMode = mode;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            if (btn.id.startsWith('vbtn-')) btn.classList.remove('active');
+        });
+        const activeBtn = document.getElementById('vbtn-' + mode);
+        if (activeBtn) activeBtn.classList.add('active');
+
+        const board = document.getElementById('kanbanBoard');
+        board.className = 'kanban-board';
+        if (mode === 'list') board.classList.add('view-list');
+    }
+
+    function filterTasksLive() {
+        renderTasks();
+    }
+
+    function toggleHeaderSearch() {
+        const popup = document.getElementById('headerSearchPopup');
+        popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Activity Log & Modal
+    function logActivity(text) {
+        db.ref('activity').push({
+            user: currentUser.username,
+            text: text,
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    function toggleActivityModal(show) {
+        const modal = document.getElementById('activityModal');
+        modal.style.display = show ? 'flex' : 'none';
+        if (show) {
+            db.ref('activity').limitToLast(50).once('value', (snapshot) => {
+                const val = snapshot.val() || {};
+                let html = '';
+                const keys = Object.keys(val).reverse();
+                keys.forEach(k => {
+                    const act = val[k];
+                    html += `
+                        <div style="font-size:12px; padding:6px; background:white; border-radius:6px; border:1px solid #eee;">
+                            <span style="font-weight:bold; color:var(--primary);">${act.user}</span>: ${act.text}
+                            <div style="font-size:10px; color:#888; margin-top:2px;">${new Date(act.timestamp).toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+                document.getElementById('activityModalListUI').innerHTML = html || '<div style="color:#888; font-size:12px;">No recent activity.</div>';
             });
         }
     }
 
-    function toggleArchiveModal(show) { document.getElementById('archiveModal').style.display = show ? 'flex' : 'none'; }
+    // Archive Modal
+    function toggleArchiveModal(show) {
+        const modal = document.getElementById('archiveModal');
+        modal.style.display = show ? 'flex' : 'none';
+    }
 
-    function renderArchiveList() {
-        const list = document.getElementById('archiveListUI');
-        if (!list) return;
-        list.innerHTML = '';
-        const items = Object.keys(archivedTasksCache || {});
-        if (items.length === 0) {
-            list.innerHTML = `<div style="text-align:center; color:#999; font-size:12px; margin-top:20px;">Archive is empty.</div>`;
-            return;
-        }
-        items.forEach(id => {
-            const t = archivedTasksCache[id];
-            list.innerHTML += `
-                <div style="background:white; padding:12px; border-radius:8px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
+    function renderArchiveModalList() {
+        const listEl = document.getElementById('archiveListUI');
+        if (!listEl) return;
+        let html = '';
+        for (let id in archivedTasksCache) {
+            const task = archivedTasksCache[id];
+            html += `
+                <div style="background:white; padding:10px; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <div style="font-weight:bold; font-size:13px; text-transform:uppercase;">${t.title}</div>
-                        <div style="font-size:10px; color:#666;">Project: ${t.project || 'General'} | Deleted by: ${(t.deletedBy || 'Admin').toUpperCase()}</div>
+                        <div style="font-weight:bold; font-size:13px;">${task.title}</div>
+                        <div style="font-size:11px; color:#666;">Project: ${task.project} | Assigned: ${task.assignee}</div>
                     </div>
-                    ${currentUser.role === 'admin' ? `
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="restoreTask('${id}')" style="background:var(--status-completed); color:white; border:none; padding:6px 10px; border-radius:6px; font-size:10px; cursor:pointer;">Restore</button>
-                            <button onclick="permanentDeleteTask('${id}')" style="background:var(--alert); color:white; border:none; padding:6px 10px; border-radius:6px; font-size:10px; cursor:pointer;">Purge</button>
-                        </div>
-                    ` : ''}
+                    ${currentUser.role === 'admin' ? `<button onclick="restoreTask('${id}')" class="save-btn" style="width:auto; padding:6px 12px; background:var(--accent); font-size:11px;">Restore</button>` : ''}
                 </div>
             `;
-        });
-    }
-
-    function restoreTask(id) {
-        const t = archivedTasksCache[id]; if (!t) return;
-        const { deletedBy, deletedAt, ...taskData } = t;
-        db.ref('tasks/' + id).set(taskData).then(() => {
-            db.ref('archived_tasks/' + id).remove().then(() => logActivity(`Restored task: "${taskData.title}"`));
-        });
-    }
-
-    function permanentDeleteTask(id) {
-        if (confirm("Permanently purge this task from the system?")) {
-            db.ref('archived_tasks/' + id).remove().then(() => logActivity(`Permanently deleted task #${id}`));
         }
+        listEl.innerHTML = html || '<div style="color:#888; font-size:12px;">No archived tasks.</div>';
     }
 
-    // AUDIO RECORDING FOR NOTES
-    async function toggleAudioRecording() {
-        const btn = document.getElementById('recordAudioBtn');
-        if (isRecording) {
-            mediaRecorder.stop(); isRecording = false;
-            btn.classList.remove('recording'); btn.innerText = '🎤';
-        } else {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream); audioChunks = [];
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-                mediaRecorder.onstop = () => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
-                    reader.onloadend = () => saveAudioToTask(reader.result);
-                    stream.getTracks().forEach(track => track.stop());
-                };
-                mediaRecorder.start(); isRecording = true;
-                btn.classList.add('recording'); btn.innerText = '⏹️';
-            } catch (err) { alert("Microphone access denied."); }
-        }
-    }
-
-    function saveAudioToTask(base64Data) {
-        if (!currentOpenTaskId) return;
-        const t = currentTasksCache[currentOpenTaskId] || {};
-        let hist = t.history || [];
-        hist.push({ text: "🎤 Voice Note Recorded", audio: base64Data, user: currentUser.name, date: Date.now() });
-        db.ref('tasks/' + currentOpenTaskId).update({ history: hist, updatedAt: Date.now() }).then(() => openDrawer(currentOpenTaskId));
-    }
-
-    // KANBAN DRAG & DROP
-    function allowDrop(e) { e.preventDefault(); }
-    function drag(e, id) { e.dataTransfer.setData("text", id); }
-    function drop(e) {
-        e.preventDefault();
-        const id = e.dataTransfer.getData("text");
-        const newStatus = e.currentTarget.getAttribute("data-status");
-        if (id && newStatus) {
-            const t = currentTasksCache[id];
-            if (t) {
-                let hist = t.history || [];
-                const now = Date.now();
-                hist.push({ text: `Moved to ${newStatus.toUpperCase()}`, user: currentUser.name, date: now });
-                db.ref('tasks/' + id).update({ status: newStatus, updatedAt: now, history: hist });
-                logActivity(`Moved "${t.title}" to ${newStatus.toUpperCase()}`);
+    function restoreTask(taskId) {
+        const task = archivedTasksCache[taskId];
+        if (!task) return;
+        db.ref(`tasks/${taskId}`).set(task, (err) => {
+            if (!err) {
+                db.ref(`archive/${taskId}`).remove(() => {
+                    logActivity(`Restored task: ${task.title}`);
+                });
             }
-        }
+        });
     }
 
-    // DIRECT MESSAGING
-    function getChatId(u1, u2) { return [u1, u2].sort().join('_'); }
-
-    function updateChatUserList() {
-        const sel = document.getElementById('chatUserSelect'); if (!sel) return;
-        const cur = sel.value; sel.innerHTML = '';
-        Object.keys(allUsers).forEach(u => {
-            if (u !== currentUser.name) sel.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`;
-        });
-        if (cur && allUsers[cur]) sel.value = cur;
-        activeChatPartner = sel.value;
+    // Direct Messaging
+    function toggleMsgModal(show) {
+        const modal = document.getElementById('msgModal');
+        modal.style.display = show ? 'flex' : 'none';
+        if (show) {
+            loadActiveChat();
+        }
     }
 
     function loadActiveChat() {
-        activeChatPartner = document.getElementById('chatUserSelect').value; if (!activeChatPartner) return;
-        const chatId = getChatId(currentUser.name, activeChatPartner);
-        db.ref(`unread/${currentUser.name}/${activeChatPartner}`).set(false);
-        if (currentChatRef) currentChatRef.off();
-        
-        currentChatRef = db.ref(`direct_messages/${chatId}`).orderByChild('timestamp').limitToLast(50);
-        currentChatRef.on('value', snap => {
-            const msgs = snap.val() || {};
-            const list = document.getElementById('msgListUI'); list.innerHTML = '';
-            const sorted = Object.values(msgs).sort((a,b) => a.timestamp - b.timestamp);
-            if (sorted.length === 0) list.innerHTML = `<div style="text-align:center; color:#999; font-size:12px; margin-top:20px;">No messages yet with ${activeChatPartner.toUpperCase()}!</div>`;
-            sorted.forEach(m => {
-                const isMe = m.sender === currentUser.name;
-                list.innerHTML += `
-                    <div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? 'var(--accent)' : '#e3e6e8'}; color: ${isMe ? 'white' : '#333'}; padding: 10px 14px; border-radius: 12px; max-width: 80%; font-size: 13px; word-break: break-word;">
-                        <div style="font-size: 10px; opacity: 0.8; margin-bottom: 2px; font-weight: bold;">${m.sender.toUpperCase()}</div>
-                        <div>${m.text}</div>
-                        <div style="font-size: 9px; opacity: 0.7; text-align: right; margin-top: 4px;">${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                    </div>`;
-            });
-            list.scrollTop = list.scrollHeight;
+        const partner = document.getElementById('chatUserSelect').value;
+        activeChatPartner = partner;
+        if (!partner) {
+            document.getElementById('msgListUI').innerHTML = '<div style="color:#888; font-size:12px; text-align:center;">Select a staff member to chat.</div>';
+            return;
+        }
+
+        db.ref(`messages/${currentUser.username}/${partner}/unread`).set(false);
+
+        const chatId = [currentUser.username, partner].sort().join('_');
+        db.ref(`directMessages/${chatId}`).on('value', (snapshot) => {
+            const msgs = snapshot.val() || {};
+            let html = '';
+            for (let key in msgs) {
+                const m = msgs[key];
+                const isMe = m.sender === currentUser.username;
+                html += `
+                    <div style="display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'};">
+                        <div style="background:${isMe ? 'var(--accent)' : 'white'}; color:${isMe ? 'white' : '#333'}; padding:8px 12px; border-radius:10px; max-width:80%; font-size:13px; border:1px solid #eee;">
+                            ${m.text}
+                        </div>
+                        <span style="font-size:9px; color:#888; margin-top:2px;">${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                `;
+            }
+            const listUI = document.getElementById('msgListUI');
+            listUI.innerHTML = html || '<div style="color:#888; font-size:12px; text-align:center;">No messages yet. Start the conversation!</div>';
+            listUI.scrollTop = listUI.scrollHeight;
         });
     }
 
     function sendPrivateMessage() {
-        const textInput = document.getElementById('newMsgText'); const text = textInput.value.trim();
-        if (!text || !activeChatPartner) return;
-        const chatId = getChatId(currentUser.name, activeChatPartner);
-        db.ref(`direct_messages/${chatId}`).push({ sender: currentUser.name, text: text, timestamp: Date.now() }).then(() => {
-            textInput.value = '';
-            db.ref(`unread/${activeChatPartner}/${currentUser.name}`).set(true);
-            triggerPushAlert("New DM from " + currentUser.name.toUpperCase(), text);
-        });
-    }
+        const partner = activeChatPartner;
+        const text = document.getElementById('newMsgText').value.trim();
+        if (!partner || !text) return;
 
-    function toggleMsgModal(show) {
-        document.getElementById('msgModal').style.display = show ? 'flex' : 'none';
-        if (show) { updateChatUserList(); loadActiveChat(); }
-        else if (currentChatRef) currentChatRef.off();
-    }
+        const chatId = [currentUser.username, partner].sort().join('_');
+        const msgData = {
+            sender: currentUser.username,
+            text: text,
+            timestamp: new Date().toISOString()
+        };
 
-    function listenForUnreadMessages() {
-        db.ref(`unread/${currentUser.name}`).on('value', snap => {
-            const hasUnread = Object.values(snap.val() || {}).some(val => val === true);
-            const badge = document.getElementById('msgBadge');
-            if (badge) badge.style.display = hasUnread ? 'block' : 'none';
-        });
-    }
-
-    // REAL-TIME ACTIVITY LOG SYNC
-    function logActivity(text) { db.ref('activity_log').push({ text, user: currentUser.name, timestamp: Date.now() }); }
-
-    db.ref('activity_log').limitToLast(50).on('value', snap => {
-        const logs = snap.val() || {}; 
-        const feed = document.getElementById('activityModalListUI');
-        if (!feed) return; 
-        feed.innerHTML = '';
-        const sortedLogs = Object.values(logs).sort((a,b) => b.timestamp - a.timestamp);
-        if (sortedLogs.length === 0) {
-            feed.innerHTML = `<div style="text-align:center; color:#999; font-size:12px; margin-top:20px;">No recent activity.</div>`;
-            return;
-        }
-        sortedLogs.forEach(l => {
-            feed.innerHTML += `
-                <div style="background:white; padding:10px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                        <strong style="color:var(--primary); text-transform:uppercase;">${l.user || 'system'}</strong>
-                        <span style="font-size:9px; color:#aaa;">${new Date(l.timestamp).toLocaleTimeString()}</span>
-                    </div>
-                    <div style="color:#333;">${l.text}</div>
-                </div>
-            `;
-        });
-    });
-
-    function updateTeamFilters() {
-        const bar = document.getElementById('teamFilterBar'); if (!bar) return;
-        bar.innerHTML = `<button class="filter-btn ${activeFilters.team === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')">ALL STAFF</button>`;
-        Object.keys(allUsers).forEach(u => {
-            if (u !== 'admin') {
-                bar.innerHTML += `<button class="filter-btn ${activeFilters.team === u ? 'active' : ''}" onclick="setTeamFilter('${u}')">${u.toUpperCase()}</button>`;
+        db.ref(`directMessages/${chatId}`).push(msgData, (err) => {
+            if (!err) {
+                document.getElementById('newMsgText').value = '';
+                db.ref(`messages/${partner}/${currentUser.username}/unread`).set(true);
             }
         });
     }
 
-    function setTeamFilter(teamName) { activeFilters.team = teamName; updateTeamFilters(); filterTasksLive(); }
-
-    function updateUserDropdowns() {
-        ['tUser', 'dAssigneeInput'].forEach(id => {
-            const sel = document.getElementById(id); if (!sel) return;
-            const cur = sel.value; sel.innerHTML = '';
-            Object.keys(allUsers).forEach(u => { sel.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`; });
-            if (cur) sel.value = cur;
-        });
-        const tUserSel = document.getElementById('tUser');
-        if (tUserSel && currentUser && currentUser.role !== 'admin') {
-            tUserSel.value = currentUser.name;
-        }
-    }
-
-    function toggleAdminModal(show) { 
-        document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; 
-        if (show && currentUser.role !== 'admin') {
-            switchSettingsTab('projects');
+    // Admin Settings Modal & Tabs
+    function toggleAdminModal(show) {
+        const modal = document.getElementById('adminModal');
+        modal.style.display = show ? 'flex' : 'none';
+        if (show) {
+            renderStaffList();
+            renderProjectList();
+            renderCategoryList();
         }
     }
 
     function switchSettingsTab(tab) {
-        ['Staff', 'Projects', 'Categories'].forEach(t => {
-            const el = document.getElementById(`settingsSection${t}`);
-            const btn = document.getElementById(`tab${t === 'Staff' ? 'Staff' : t === 'Projects' ? 'Proj' : 'Cat'}`);
-            if (el) el.style.display = t.toLowerCase() === tab ? 'block' : 'none';
-            if (btn) btn.classList.toggle('active', t.toLowerCase() === tab);
-        });
-    }
+        document.getElementById('tabStaff')?.classList.remove('active');
+        document.getElementById('tabProj')?.classList.remove('active');
+        document.getElementById('tabCat')?.classList.remove('active');
 
-    function addProjectSetting() {
-        const pName = document.getElementById('newProjectName').value.trim();
-        if (pName) {
-            db.ref('settings/projects/' + pName).set(true).then(() => {
-                document.getElementById('newProjectName').value = '';
-                logActivity(`Added project: ${pName}`);
-            });
-        }
-    }
-    function removeProjectSetting(pName) {
-        if (currentUser.role !== 'admin') { alert("Only admins can remove projects."); return; }
-        if (confirm(`Remove project "${pName}"?`)) { 
-            db.ref('settings/projects/' + pName).remove().then(() => logActivity(`Removed project: ${pName}`)); 
-        }
-    }
-    function renderProjectsList() {
-        const list = document.getElementById('projectListUI'); if (!list) return;
-        list.innerHTML = '';
-        Object.keys(systemProjects).forEach(p => {
-            const isAdmin = currentUser && currentUser.role === 'admin';
-            list.innerHTML += `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
-                    <div>📁 <strong>${p}</strong></div>
-                    ${isAdmin ? `<button onclick="removeProjectSetting('${p}')" style="background:var(--alert); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Remove</button>` : ''}
-                </div>`;
-        });
-    }
+        document.getElementById('settingsSectionStaff').style.display = 'none';
+        document.getElementById('settingsSectionProjects').style.display = 'none';
+        document.getElementById('settingsSectionCategories').style.display = 'none';
 
-    function addCategorySetting() {
-        const cName = document.getElementById('newCategoryName').value.trim();
-        if (cName) {
-            db.ref('settings/categories/' + cName).set(true).then(() => {
-                document.getElementById('newCategoryName').value = '';
-                logActivity(`Added category: ${cName}`);
-            });
+        if (tab === 'staff') {
+            document.getElementById('tabStaff').classList.add('active');
+            document.getElementById('settingsSectionStaff').style.display = 'block';
+        } else if (tab === 'projects') {
+            document.getElementById('tabProj').classList.add('active');
+            document.getElementById('settingsSectionProjects').style.display = 'block';
+        } else if (tab === 'categories') {
+            document.getElementById('tabCat').classList.add('active');
+            document.getElementById('settingsSectionCategories').style.display = 'block';
         }
-    }
-    function removeCategorySetting(cName) {
-        if (currentUser.role !== 'admin') { alert("Only admins can remove categories."); return; }
-        if (confirm(`Remove category "${cName}"?`)) { 
-            db.ref('settings/categories/' + cName).remove().then(() => logActivity(`Removed category: ${cName}`)); 
-        }
-    }
-    function renderCategoriesList() {
-        const list = document.getElementById('categoryListUI'); if (!list) return;
-        list.innerHTML = '';
-        Object.keys(systemCategories).forEach(c => {
-            const isAdmin = currentUser && currentUser.role === 'admin';
-            list.innerHTML += `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
-                    <div>🏷️ <strong>${c}</strong></div>
-                    ${isAdmin ? `<button onclick="removeCategorySetting('${c}')" style="background:var(--alert); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Remove</button>` : ''}
-                </div>`;
-        });
     }
 
     function addStaffMember() {
-        if (currentUser.role !== 'admin') return;
-        const name = document.getElementById('newStaffName').value.toLowerCase().trim();
-        const pass = document.getElementById('newStaffPass').value;
+        const name = document.getElementById('newStaffName').value.trim();
+        const pass = document.getElementById('newStaffPass').value.trim();
         const role = document.getElementById('newStaffRole').value;
-        if (name && pass) {
-            db.ref('users/' + name).set({ password: pass, role: role }).then(() => {
+
+        if (!name || !pass) {
+            alert('Please enter staff name and password.');
+            return;
+        }
+
+        db.ref(`users/${name}`).set({ pass: pass, role: role }, (err) => {
+            if (!err) {
                 document.getElementById('newStaffName').value = '';
                 document.getElementById('newStaffPass').value = '';
-                alert(`Staff member ${name.toUpperCase()} added.`);
-            });
-        }
+                renderStaffList();
+                alert('Staff member added successfully.');
+            }
+        });
     }
 
     function renderStaffList() {
-        const list = document.getElementById('staffListUI'); if (!list) return; list.innerHTML = '';
-        Object.keys(allUsers).forEach(u => {
-            list.innerHTML += `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
-                    <div><strong>${u.toUpperCase()}</strong> (${allUsers[u].role})</div>
-                    ${u !== 'admin' ? `<button onclick="deleteStaff('${u}')" style="background:var(--alert); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Remove</button>` : ''}
-                </div>`;
-        });
+        const listEl = document.getElementById('staffListUI');
+        if (!listEl) return;
+        let html = '';
+        for (let u in allUsers) {
+            html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #eee; font-size:12px;">
+                    <div><b>${u}</b> (${allUsers[u].role})</div>
+                    ${u !== currentUser.username ? `<button onclick="removeStaff('${u}')" style="background:none; border:none; color:var(--alert); cursor:pointer; font-weight:bold;">Remove</button>` : ''}
+                </div>
+            `;
+        }
+        listEl.innerHTML = html;
     }
 
-    function deleteStaff(username) {
-        if (currentUser.role !== 'admin') return;
-        if (confirm(`Remove user ${username.toUpperCase()}?`)) { db.ref('users/' + username).remove(); }
+    function removeStaff(username) {
+        if (!confirm(`Remove staff member ${username}?`)) return;
+        db.ref(`users/${username}`).remove(() => renderStaffList());
     }
 
-    // MEETING CHECKLIST PDF EXPORTER
-    function exportPDF(mode) {
-        const element = document.createElement('div');
-        element.style.padding = '25px';
-        element.style.fontFamily = 'Helvetica, Arial, sans-serif';
-        element.style.color = '#333';
-
-        const globalSearch = (document.getElementById('globalSearchInput')?.value || '').toLowerCase();
-        const status = document.getElementById('statusFilter').value;
-        const project = document.getElementById('projectFilter').value;
-        const category = document.getElementById('categoryFilter').value;
-        
-        let tasksToExport = {};
-        Object.keys(currentTasksCache).forEach(id => {
-            const t = currentTasksCache[id];
-            const matchesTeam = (currentUser.role === 'admin' && activeFilters.team === 'ALL') || (t.assignedTo && t.assignedTo.toLowerCase() === activeFilters.team.toLowerCase());
-            const matchesSearch = !globalSearch || (t.title && t.title.toLowerCase().includes(globalSearch));
-            const matchesStatus = status === 'all' || t.status === status;
-            const matchesProject = project === 'all' || t.project === project;
-            const matchesCategory = category === 'all' || t.category === category;
-            if (matchesTeam && matchesSearch && matchesStatus && matchesProject && matchesCategory) {
-                tasksToExport[id] = t;
+    function addProjectSetting() {
+        const name = document.getElementById('newProjectName').value.trim();
+        if (!name) return;
+        db.ref(`settings/projects/${name}`).set(true, (err) => {
+            if (!err) {
+                document.getElementById('newProjectName').value = '';
+                renderProjectList();
             }
         });
+    }
 
-        const staffGroups = {};
-        Object.values(tasksToExport).forEach(t => {
-            const staff = (t.assignedTo || 'Unassigned').toUpperCase();
-            if (!staffGroups[staff]) staffGroups[staff] = [];
-            staffGroups[staff].push(t);
-        });
-
-        let html = `
-            <div style="border-bottom: 3px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px;">
-                <h1 style="color:#2c3e50; font-size: 22px; text-transform: uppercase; margin: 0;">URBAN CASA — Site & Team Review Checklist</h1>
-                <p style="font-size:11px; color:#666; margin-top: 5px;">
-                    Generated on <strong>${new Date().toLocaleString()}</strong> | Prepared by: <strong>${currentUser.name.toUpperCase()}</strong>
-                </p>
-            </div>`;
-
-        if (Object.keys(staffGroups).length === 0) {
-            html += `<p style="font-size:13px; color:#888;">No work orders found for the selected filters.</p>`;
-        } else {
-            Object.keys(staffGroups).sort().forEach(staff => {
-                html += `
-                    <div style="margin-bottom: 25px; page-break-inside: avoid;">
-                        <h2 style="background: #2c3e50; color: white; font-size: 14px; padding: 6px 12px; border-radius: 4px; margin-bottom: 12px; text-transform: uppercase;">
-                            👤 Staff Member: ${staff}
-                        </h2>`;
-
-                const sections = ['new', 'in-progress', 'pending', 'completed'];
-                sections.forEach(st => {
-                    const stTasks = staffGroups[staff].filter(t => t.status === st);
-                    if (stTasks.length > 0) {
-                        const statusLabel = st === 'new' ? 'NEW ORDERS' : st === 'in-progress' ? 'IN PROGRESS' : st === 'pending' ? 'PENDING / BLOCKED' : 'COMPLETED';
-                        const statusColor = st === 'new' ? '#3498db' : st === 'in-progress' ? '#f1c40f' : st === 'pending' ? '#e67e22' : '#2ecc71';
-
-                        html += `
-                            <div style="margin-left: 10px; margin-bottom: 10px;">
-                                <div style="font-size: 11px; font-weight: bold; color: ${statusColor}; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-bottom: 8px;">
-                                    📌 ${statusLabel} (${stTasks.length})
-                                </div>
-                                <div style="display: flex; flex-direction: column; gap: 6px;">`;
-
-                        stTasks.forEach(t => {
-                            html += `
-                                <div style="display: flex; align-items: flex-start; font-size: 11px; padding: 4px 0;">
-                                    <span style="display: inline-block; width: 14px; height: 14px; border: 1.5px solid #555; border-radius: 3px; margin-right: 8px; margin-top: 1px; flex-shrink: 0;"></span>
-                                    <div style="flex: 1;">
-                                        <strong style="text-transform: uppercase;">${t.title}</strong>
-                                        <span style="color:#777; font-size:10px; margin-left: 6px;">[Proj: ${t.project || 'General'} | Cat: ${t.category || 'General'} | Pri: ${t.priority || 'Moderate'}]</span>
-                                    </div>
-                                </div>`;
-                        });
-
-                        html += `</div></div>`;
-                    }
-                });
-
-                html += `</div>`;
-            });
+    function renderProjectList() {
+        const listEl = document.getElementById('projectListUI');
+        if (!listEl) return;
+        let html = '';
+        for (let p in systemProjects) {
+            html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #eee; font-size:12px;">
+                    <div><b>${p}</b></div>
+                    ${currentUser.role === 'admin' && p !== 'My Tasks (General)' ? `<button onclick="removeProjectSetting('${p}')" style="background:none; border:none; color:var(--alert); cursor:pointer; font-weight:bold;">Delete</button>` : ''}
+                </div>
+            `;
         }
+        listEl.innerHTML = html;
+    }
 
-        element.innerHTML = html;
-        html2pdf().set({
-            margin: 10,
-            filename: `UrbanCasa_Meeting_Checklist_${Date.now()}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(element).save();
+    function removeProjectSetting(name) {
+        if (!confirm(`Delete project ${name}?`)) return;
+        db.ref(`settings/projects/${name}`).remove(() => renderProjectList());
+    }
+
+    function addCategorySetting() {
+        const name = document.getElementById('newCategoryName').value.trim();
+        if (!name) return;
+        db.ref(`settings/categories/${name}`).set(true, (err) => {
+            if (!err) {
+                document.getElementById('newCategoryName').value = '';
+                renderCategoryList();
+            }
+        });
+    }
+
+    function renderCategoryList() {
+        const listEl = document.getElementById('categoryListUI');
+        if (!listEl) return;
+        let html = '';
+        for (let c in systemCategories) {
+            html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px; border-bottom:1px solid #eee; font-size:12px;">
+                    <div><b>${c}</b></div>
+                    ${currentUser.role === 'admin' ? `<button onclick="removeCategorySetting('${c}')" style="background:none; border:none; color:var(--alert); cursor:pointer; font-weight:bold;">Delete</button>` : ''}
+                </div>
+            `;
+        }
+        listEl.innerHTML = html;
+    }
+
+    function removeCategorySetting(name) {
+        if (!confirm(`Delete category ${name}?`)) return;
+        db.ref(`settings/categories/${name}`).remove(() => renderCategoryList());
+    }
+
+    // PDF Exporter
+    function exportPDF(type) {
+        const element = document.getElementById('kanbanBoard');
+        const opt = {
+            margin:       10,
+            filename:     'urban-casa-work-orders.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+        html2pdf().from(element).set(opt).save();
+    }
+
+    // Push Notifications
+    function requestPushNotificationPermission() {
+        if ('Notification' in window) {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    alert('Push notifications enabled successfully.');
+                } else {
+                    alert('Notification permission denied.');
+                }
+            });
+        } else {
+            alert('Notifications not supported in this browser.');
+        }
+    }
+
+    // Audio Recording
+    function toggleAudioRecording() {
+        const btn = document.getElementById('recordAudioBtn');
+        if (!isRecording) {
+            navigator.mediaDevices?.getUserMedia({ audio: true }).then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    alert('Voice note recorded successfully (simulation).');
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                btn.classList.add('recording');
+            }).catch(err => {
+                alert('Microphone access denied or unavailable.');
+            });
+        } else {
+            if (mediaRecorder) mediaRecorder.stop();
+            isRecording = false;
+            btn.classList.remove('recording');
+        }
     }
 </script>
 </body>
