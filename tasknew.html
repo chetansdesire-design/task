@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>URBAN CASA | Command Center</title>
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <!-- HTML2PDF Exporter Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --alert: #e74c3c;
+            --status-new: #3498db; --status-progress: #f1c40f; --status-pending: #e67e22; --status-completed: #2ecc71;
+            --pri-urgent: #e74c3c; --pri-moderate: #f39c12; --pri-upcoming: #3498db;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        body { background-color: var(--bg); color: #1a1a1a; -webkit-font-smoothing: antialiased; overscroll-behavior-y: contain; }
+
+        .container { max-width: 1300px; margin: 0 auto; padding: 15px; display: none; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; position: relative; }
+        .task-badge { background: var(--alert); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+
+        /* Animations & Blinking System */
+        @keyframes blink-red { 0% { box-shadow: 0 0 0px var(--alert); } 50% { box-shadow: 0 0 12px var(--alert); border-color: var(--alert); } 100% { box-shadow: 0 0 0px var(--alert); } }
+        .is-overdue { animation: blink-red 2s infinite ease-in-out; border-left: 8px solid var(--alert) !important; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        /* Badges & Tags */
+        .pri-tag { font-size: 9px; padding: 3px 6px; border-radius: 4px; color: white; font-weight: 900; text-transform: uppercase; margin-left: 5px; }
+        .tag-urgent { background: var(--pri-urgent); animation: pulse 1.5s infinite; }
+        .tag-moderate { background: var(--pri-moderate); }
+        .tag-upcoming { background: var(--pri-upcoming); }
+
+        .task-card.is-stale { border-right: 5px solid var(--alert) !important; background-color: #fff4f4; }
+        .stale-badge { background: var(--alert); color: white; font-size: 8px; padding: 2px 5px; border-radius: 4px; font-weight: 800; text-transform: uppercase; display: inline-block; margin-left: 5px; }
+
+        .time-box { background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+        .shortcut-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .btn-time { flex: 1; min-width: 70px; padding: 8px 10px; font-size: 11px; font-weight: 700; background: #edf2f7; color: #4a5568; border: 1px solid #cbd5e0; border-radius: 6px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        .btn-time:hover { background: #cbd5e0; }
+
+        /* Rapid Add Form Layout */
+        .rapid-form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .rapid-sub-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+        /* KANBAN BOARD STYLES */
+        .kanban-board { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; align-items: flex-start; scroll-behavior: smooth; }
+        .kanban-board::-webkit-scrollbar { height: 6px; }
+        .kanban-board::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+        
+        .kanban-col { background: #e3e6e8; border-radius: 12px; padding: 12px; width: 300px; min-width: 300px; min-height: 60vh; display: flex; flex-direction: column; gap: 10px; }
+        .kanban-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 5px; color: #555; }
+        .kanban-cards { display: flex; flex-direction: column; gap: 10px; min-height: 50px; flex: 1; }
+        
+        /* TASK CARDS */
+        .task-card { background: white; border-radius: 8px; border-left: 6px solid #ccc; padding: 14px; cursor: grab; transition: background-color 0.3s, transform 0.2s; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.1); touch-action: pan-y; }
+        .task-card:active { cursor: grabbing; opacity: 0.8; transform: scale(0.98); }
+        .card-new { border-left-color: var(--status-new); }
+        .card-in-progress { border-left-color: var(--status-progress); }
+        .card-pending { border-left-color: var(--status-pending); }
+        .card-completed { border-left-color: var(--status-completed); opacity: 0.6; }
+        .card-title { font-weight: 800; font-size: 1.05rem; text-transform: uppercase; margin-bottom: 8px; color: #333; line-height: 1.3; }
+
+        /* VIEW MODES OVERRIDES */
+        .view-list .kanban-board { flex-direction: column; gap: 20px; }
+        .view-list .kanban-col { width: 100%; min-width: 100%; min-height: auto; }
+        .view-list .kanban-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+
+        .view-compact .task-card { padding: 8px 12px; }
+        .view-compact .card-title { font-size: 0.85rem; margin-bottom: 4px; }
+
+        .view-minimal .task-card { padding: 6px 10px; border-left-width: 3px; }
+        .view-minimal .card-title { font-size: 0.8rem; margin-bottom: 2px; }
+
+        .view-details .task-card { padding: 16px; border-left-width: 8px; }
+        .view-details .card-title { font-size: 1.15rem; margin-bottom: 10px; }
+
+        .drawer, .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: flex-end; }
+        .modal { justify-content: center; align-items: center; }
+        .drawer-content { background: white; width: 100%; max-width: 460px; height: 100%; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; }
+        .modal-content { background: white; width: 90%; max-width: 520px; padding: 25px; border-radius: 16px; position: relative; max-height: 90vh; overflow-y: auto; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .history-item { position: relative; padding-left: 20px; border-left: 2px solid #eee; margin-bottom: 15px; font-size: 13px; }
+        .history-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
+
+        .update-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: white; appearance: none; }
+        .save-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .save-btn:hover { opacity: 0.9; }
+
+        .btn-pdf { background: #27ae60; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-pdf-all { background: #8e44ad; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+
+        .filter-section { margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: center; }
+        .filter-label { font-size: 10px; font-weight: 800; color: #999; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        
+        .filter-group { overflow-x: auto; display: flex; gap: 8px; padding-bottom: 5px; cursor: grab; user-select: none; }
+        .filter-group:active { cursor: grabbing; }
+        .filter-group::-webkit-scrollbar { display: none; }
+        .filter-btn { padding: 8px 14px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.3s; }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        .noti-wrapper { position: relative; display: inline-block; }
+        .noti-btn { background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+        .badge-dot { position: absolute; top: -2px; right: -2px; background: var(--alert); width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; display: none; }
+        
+        .admin-only { display: none; }
+
+        .record-btn { background: var(--bg); border: 1px solid #ddd; border-radius: 8px; width: 60px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: 0.3s; }
+        .record-btn.recording { background: var(--alert); color: white; border-color: var(--alert); animation: pulse 1s infinite; }
+
+        .settings-tab-btn { flex: 1; padding: 8px; border: 1px solid #ddd; background: #f8f9fa; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .settings-tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .expand-btn { background: #edf2f7; color: var(--primary); border: 1px dashed #cbd5e0; padding: 8px; border-radius: 8px; width: 100%; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; margin-top: 5px; transition: 0.2s; }
+        .expand-btn:hover { background: #cbd5e0; }
+
+        @media (max-width: 768px) {
+            header { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .header-actions { width: 100%; justify-content: space-between; border-top: 1px solid #eee; padding-top: 10px; }
+            .rapid-form-grid, .rapid-sub-grid { grid-template-columns: 1fr; gap: 6px; }
+            .filter-section { flex-direction: column; align-items: flex-start; }
+            .kanban-board { overflow-x: auto; gap: 15px; padding: 0 10px 20px 10px; scroll-snap-type: none; flex-wrap: nowrap; }
+            .kanban-col { min-width: 85vw; width: 85vw; flex: 0 0 85vw; }
+            .drawer { align-items: flex-end; justify-content: center; }
+            .drawer-content { height: 90vh; max-width: 100%; border-radius: 24px 24px 0 0; padding: 20px 15px; animation: slideUp 0.3s ease; }
+            @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            .update-input, .save-btn { padding: 14px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="position:fixed; inset:0; background:var(--primary); display:flex; align-items:center; justify-content:center; z-index:11000;">
+    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:350px; text-align:center;">
+        <h2 style="margin-bottom:20px; color:var(--primary);">URBAN CASA</h2>
+        <input type="text" id="userIn" placeholder="Username" class="update-input">
+        <input type="password" id="passIn" placeholder="Password" class="update-input">
+        <button onclick="handleLogin()" class="save-btn" style="background:var(--accent)">Sign In</button>
+    </div>
+</div>
+
+<div class="container" id="mainApp">
+    <header>
+        <div>
+            <h3 id="welcomeMsg" style="font-size: 11px; color: #888;">...</h3>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-weight:900; font-size: 1.3rem;">WORK ORDERS</span>
+                <span id="taskBadge" class="task-badge">0</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button onclick="exportPDF('filtered')" class="btn-pdf" title="Export meeting PDF checklist">📝 Export PDF</button>
+            <button onclick="toggleActivityModal(true)" class="noti-btn" title="Live Activity Feed" style="font-size:1rem;">📡</button>
+            <button onclick="toggleArchiveModal(true)" class="btn-pdf-all admin-only" title="View Deleted/Archived Tasks">🗑️ Archive</button>
+
+            <!-- Global Search Icon & Expandable Bar -->
+            <div style="position:relative; display:inline-block;">
+                <button class="noti-btn" onclick="toggleHeaderSearch()" title="Global Search">🔍</button>
+                <div id="headerSearchPopup" style="display:none; position:absolute; right:0; top:45px; background:white; padding:10px; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.15); z-index:1000; width:250px;">
+                    <input type="text" id="globalSearchInput" placeholder="Global search anything..." class="update-input" style="margin:0; font-size:12px;" oninput="filterTasksLive()">
+                </div>
+            </div>
+
+            <div class="noti-wrapper">
+                <button class="noti-btn" onclick="toggleMsgModal(true)">💬</button>
+                <div class="badge-dot" id="msgBadge"></div>
+            </div>
+            
+            <button class="noti-btn" onclick="requestPushNotificationPermission()" title="Enable Notifications">🔔</button>
+            <button id="settingsBtn" onclick="toggleAdminModal(true)" style="border:none; background:none; font-size:1.6rem; cursor:pointer;" title="Settings">⚙️</button>
+            <button onclick="logout()" style="border:none; background:none; color:var(--alert); font-weight:bold; font-size:1rem; cursor:pointer;">Logout</button>
+        </div>
+    </header>
+
+    <!-- RAPID TASK CREATION FORM (Explicit Project Selection Required) -->
+    <div id="taskFormArea" style="background:white; padding:15px; border-radius:12px; margin-bottom:15px; display:none; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+        <form id="taskForm" onsubmit="createTask(event)">
+            <div class="rapid-form-grid">
+                <input type="text" id="tTitle" placeholder="⚡ Quick Work Description..." required class="update-input" style="margin:0; font-weight:bold;">
+                <select id="tProject" class="update-input" style="margin:0;" required>
+                    <option value="" disabled selected>-- Select Project --</option>
+                </select>
+                <select id="tCategory" class="update-input" style="margin:0;">
+                    <option value="" disabled selected>-- Select Category --</option>
+                </select>
+            </div>
+            
+            <div class="rapid-sub-grid">
+                <select id="tUser" class="update-input" style="margin:0;"></select> 
+                <select id="tPriority" class="update-input" style="margin:0;">
+                    <option value="Urgent">🔴 Urgent</option>
+                    <option value="Moderate" selected>🟠 Moderate</option>
+                    <option value="Upcoming">🔵 Upcoming</option>
+                </select>
+                <input type="datetime-local" id="tDate" required class="update-input" style="margin:0;">
+            </div>
+
+            <div class="shortcut-row" style="margin-top:2px; margin-bottom:10px;">
+                <button type="button" class="btn-time" onclick="setQuickDate('tDate', 'now')">⚡ Now</button>
+                <button type="button" class="btn-time" onclick="setQuickDate('tDate', 'plus1')">+1 Hour</button>
+                <button type="button" class="btn-time" onclick="setQuickDate('tDate', 'today6pm')">Today 6PM</button>
+                <button type="button" class="btn-time" onclick="setQuickDate('tDate', 'tomorrow')">Tmr 9AM</button>
+            </div>
+
+            <button type="submit" class="save-btn" style="background:var(--accent);">+ Rapid Assign Task</button>
+        </form>
+    </div>
+
+    <!-- PROJECT, CATEGORY & STATUS FILTERS -->
+    <div style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap;">
+        <select id="projectFilter" class="update-input" style="margin:0; flex:1; min-width:150px;" onchange="filterTasksLive()">
+            <option value="all">All Projects</option>
+        </select>
+        <select id="categoryFilter" class="update-input" style="margin:0; flex:1; min-width:150px;" onchange="filterTasksLive()">
+            <option value="all">All Categories</option>
+        </select>
+        <select id="statusFilter" class="update-input" style="margin:0; width:150px;" onchange="filterTasksLive()">
+            <option value="all">All Statuses</option>
+            <option value="new">New</option>
+            <option value="in-progress">In Progress</option>
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+        </select>
+    </div>
+
+    <!-- TRACK STAFF & DASHBOARD VIEW MODES -->
+    <div class="filter-section">
+        <div class="admin-only" id="adminStaffFilter" style="flex:1;">
+            <span class="filter-label">Track Staff (Drag to scroll)</span>
+            <div class="filter-group" id="teamFilterBar"></div>
+        </div>
+
+        <div>
+            <span class="filter-label">View Mode</span>
+            <div class="filter-group">
+                <button class="filter-btn active" id="vbtn-kanban" onclick="setViewMode('kanban')">📋 Board</button>
+                <button class="filter-btn" id="vbtn-list" onclick="setViewMode('list')">📄 List</button>
+                <button class="filter-btn" id="vbtn-compact" onclick="setViewMode('compact')">⚡ Compact</button>
+                <button class="filter-btn" id="vbtn-minimal" onclick="setViewMode('minimal')">🔹 Minimal</button>
+                <button class="filter-btn" id="vbtn-details" onclick="setViewMode('details')">📊 Detailed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KANBAN / LIST BOARD -->
+    <div class="kanban-board" id="kanbanBoard">
+        <div class="kanban-col" data-status="new" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="kanban-header">New <span id="cnt-new">0</span></div>
+            <div class="kanban-cards" id="col-new"></div>
+            <div id="expand-new"></div>
+        </div>
+        <div class="kanban-col" data-status="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="kanban-header">In Progress <span id="cnt-in-progress">0</span></div>
+            <div class="kanban-cards" id="col-in-progress"></div>
+            <div id="expand-in-progress"></div>
+        </div>
+        <div class="kanban-col" data-status="pending" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="kanban-header">Pending <span id="cnt-pending">0</span></div>
+            <div class="kanban-cards" id="col-pending"></div>
+            <div id="expand-pending"></div>
+        </div>
+        <div class="kanban-col" data-status="completed" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="kanban-header">Completed <span id="cnt-completed">0</span></div>
+            <div class="kanban-cards" id="col-completed"></div>
+            <div id="expand-completed"></div>
+        </div>
+    </div>
+</div>
+
+<!-- TASK DRAWER -->
+<div class="drawer" id="taskDrawer" onclick="closeDrawer(event)">
+    <div class="drawer-content" onclick="event.stopPropagation()">
+        <div style="width: 40px; height: 5px; background: #ddd; border-radius: 5px; margin: 0 auto 15px auto;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
+            <input type="text" id="dTitleInput" class="update-input" style="font-weight:900; font-size:1.2rem; text-transform:uppercase; margin:0;" placeholder="Task Title">
+            <button onclick="document.getElementById('taskDrawer').style.display='none'" style="border:none; background:none; font-size:24px; cursor:pointer; margin-left:10px;">✕</button>
+        </div>
+        
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <select id="dProjectInput" class="update-input" style="margin:0; flex:1;" required>
+                <option value="" disabled selected>-- Select Project --</option>
+            </select>
+            <select id="dCategoryInput" class="update-input" style="margin:0; flex:1;"></select>
+        </div>
+        
+        <div style="margin-bottom:12px;">
+            <select id="dAssigneeInput" class="update-input admin-only" style="margin:0;"></select>
+        </div>
+
+        <p id="dMeta" style="font-size:11px; color:#888; margin-bottom:15px; font-weight:bold;"></p>
+        <div class="history-container" id="dHistory" style="flex:1; overflow-y:auto; margin-bottom:15px; padding-right:10px;"></div>
+        
+        <div style="background:#f9f9f9; padding:15px; border-radius:12px; margin-bottom: 20px;">
+            <div style="display:flex; gap:10px; margin-bottom: 10px;">
+                <textarea id="dNoteInput" class="update-input" style="height:60px; resize:none; margin-bottom:0;" placeholder="Add update note..."></textarea>
+                <button id="recordAudioBtn" class="record-btn" onclick="toggleAudioRecording()" title="Record voice note">🎤</button>
+            </div>
+            <div class="time-box">
+                <select id="dPriorityInput" class="update-input" style="margin-bottom:8px;">
+                    <option value="Urgent">🔴 Urgent</option>
+                    <option value="Moderate">🟠 Moderate</option>
+                    <option value="Upcoming">🔵 Upcoming</option>
+                </select>
+                <select id="dStatusInput" class="update-input" style="margin-bottom:8px;">
+                    <option value="new">New</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <input type="datetime-local" id="dDateInput" class="update-input" style="margin:0;">
+                <div class="shortcut-row">
+                    <button type="button" class="btn-time" onclick="setQuickDate('dDateInput', 'now')">Now</button>
+                    <button type="button" class="btn-time" onclick="setQuickDate('dDateInput', 'plus2')">+2 Hrs</button>
+                </div>
+            </div>
+            <button id="dSaveBtn" onclick="saveTaskUpdate()" class="save-btn" style="background:var(--accent)">Save Updates</button>
+            <div id="deleteTaskArea" style="margin-top:10px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTIVITY LOG MODAL -->
+<div class="modal" id="activityModal" onclick="toggleActivityModal(false)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="width:90%; max-width:500px; height:75vh; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0;">📡 Real-Time Activity Feed</h3>
+            <button onclick="toggleActivityModal(false)" style="border:none; background:none; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        <p style="font-size:12px; color:#666; margin-bottom:15px;">Live feed of actions across projects and tasks.</p>
+        <div id="activityModalListUI" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; border:1px solid #eee; padding:10px; border-radius:8px; background:#f9f9f9;"></div>
+    </div>
+</div>
+
+<!-- ARCHIVE / TRASH MODAL -->
+<div class="modal" id="archiveModal" onclick="toggleArchiveModal(false)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="width:90%; max-width:600px; height:80vh; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0;">🗑️ Task Archive & Trash Bin</h3>
+            <button onclick="toggleArchiveModal(false)" style="border:none; background:none; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        <p style="font-size:12px; color:#666; margin-bottom:15px;">Deleted tasks are securely archived here. Admins can review, restore, or purge them.</p>
+        <div id="archiveListUI" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; border:1px solid #eee; padding:10px; border-radius:8px; background:#f9f9f9;"></div>
+    </div>
+</div>
+
+<!-- DM MODAL -->
+<div class="modal" id="msgModal" onclick="toggleMsgModal(false)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="display:flex; flex-direction:column; height:85vh; max-height:700px; padding: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; font-size:1.1rem;">Direct Messages</h3>
+            <button onclick="toggleMsgModal(false)" style="border:none; background:none; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        
+        <select id="chatUserSelect" class="update-input" style="margin-bottom:15px; font-weight:bold; background:#f0f2f5;" onchange="loadActiveChat()"></select>
+        
+        <div id="msgListUI" style="flex:1; overflow-y:auto; margin-bottom:15px; display:flex; flex-direction:column; gap:10px; padding-right:5px; background:#f9f9f9; padding:10px; border-radius:12px; border:1px solid #eee;"></div>
+        
+        <div style="display:flex; gap:8px; margin-top: auto;">
+            <input type="text" id="newMsgText" placeholder="Type a message..." class="update-input" style="margin:0; flex:1;">
+            <button onclick="sendPrivateMessage()" class="save-btn" style="width:auto; padding:0 20px; background:var(--accent);">Send</button>
+        </div>
+    </div>
+</div>
+
+<!-- ADMIN / STAFF SETTINGS MODAL -->
+<div class="modal" id="adminModal" onclick="toggleAdminModal(false)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0;">⚙️ System Settings</h3>
+            <button onclick="toggleAdminModal(false)" style="border:none; background:none; font-size:20px; cursor:pointer;">✕</button>
+        </div>
+        
+        <div style="display:flex; margin-bottom:15px; border-radius:6px; overflow:hidden;">
+            <button class="settings-tab-btn active admin-only" id="tabStaff" onclick="switchSettingsTab('staff')">Staff Roster</button>
+            <button class="settings-tab-btn" id="tabProj" onclick="switchSettingsTab('projects')">Projects</button>
+            <button class="settings-tab-btn" id="tabCat" onclick="switchSettingsTab('categories')">Categories</button>
+        </div>
+
+        <!-- STAFF TAB (ADMIN ONLY) -->
+        <div id="settingsSectionStaff" class="admin-only">
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="newStaffName" placeholder="Staff Name" class="update-input" style="margin:0; flex:1;">
+                <select id="newStaffRole" class="update-input" style="margin:0; width:100px;">
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <input type="password" id="newStaffPass" placeholder="Password" class="update-input" style="margin-top:8px;">
+            <button onclick="addStaffMember()" class="save-btn" style="margin-bottom:15px; background:var(--accent);">Add Staff Member</button>
+            <div id="staffListUI" style="max-height:200px; overflow-y:auto; border:1px solid #eee; border-radius:8px; padding:5px;"></div>
+        </div>
+
+        <!-- PROJECTS TAB (ALL USERS CAN ADD, ONLY ADMIN CAN DELETE) -->
+        <div id="settingsSectionProjects">
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="newProjectName" placeholder="New Project Name" class="update-input" style="margin:0; flex:1;">
+                <button onclick="addProjectSetting()" class="save-btn" style="width:100px; background:var(--accent);">Add</button>
+            </div>
+            <div id="projectListUI" style="max-height:220px; overflow-y:auto; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:10px;"></div>
+        </div>
+
+        <!-- CATEGORIES TAB (ALL USERS CAN ADD, ONLY ADMIN CAN DELETE) -->
+        <div id="settingsSectionCategories" style="display:none;">
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="newCategoryName" placeholder="New Category Name" class="update-input" style="margin:0; flex:1;">
+                <button onclick="addCategorySetting()" class="save-btn" style="width:100px; background:var(--accent);">Add</button>
+            </div>
+            <div id="categoryListUI" style="max-height:220px; overflow-y:auto; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:10px;"></div>
+        </div>
+
+        <button onclick="toggleAdminModal(false)" class="save-btn" style="background:#eee; color:#333; margin-top:15px;">Close</button>
+    </div>
+</div>
+
+<script>
+    // FIREBASE INITIALIZATION
+    const firebaseConfig = { databaseURL: "https://task-76764-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // SESSION HANDLING
+    function getSession() {
+        try {
+            let session = localStorage.getItem('casa_session');
+            if (!session) {
+                const match = document.cookie.match(new RegExp('(^| )casa_session=([^;]+)'));
+                if (match) {
+                    session = decodeURIComponent(match[2]);
+                    localStorage.setItem('casa_session', session);
+                }
+            }
+            return session ? JSON.parse(session) : null;
+        } catch(e) { return null; }
+    }
+    
+    function setSession(user) {
+        localStorage.setItem('casa_session', JSON.stringify(user));
+        document.cookie = "casa_session=" + encodeURIComponent(JSON.stringify(user)) + "; max-age=315360000; path=/";
+    }
+
+    let currentUser = getSession();
+    let allUsers = {};
+    let systemProjects = {};
+    let systemCategories = {};
+    let activeFilters = { team: '' }; 
+    let currentTasksCache = {};
+    let archivedTasksCache = {};
+    let currentOpenTaskId = null;
+    let activeChatPartner = '';
+    let currentChatRef = null;
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+
+    // VIEW MODES & EXPAND CONTROLS
+    let currentViewMode = 'kanban';
+    let expandedSections = { 'new': false, 'in-progress': false, 'pending': false, 'completed': false };
+
+    // DRAG SCROLL FOR TEAM FILTER
+    const slider = document.getElementById('teamFilterBar');
+    let isDown = false; let startX; let scrollLeft;
+    if (slider) {
+        slider.addEventListener('mousedown', (e) => { isDown = true; startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft; });
+        slider.addEventListener('mouseleave', () => { isDown = false; });
+        slider.addEventListener('mouseup', () => { isDown = false; });
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            slider.scrollLeft = scrollLeft - ((e.pageX - slider.offsetLeft) - startX) * 2;
+        });
+    }
+
+    function getNowISO() {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16);
+    }
+
+    function setQuickDate(inputId, type) {
+        const input = document.getElementById(inputId);
+        let date = new Date();
+        if (type === 'plus1') { date.setHours(date.getHours() + 1); }
+        else if (type === 'today6pm') { date.setHours(18,0,0,0); }
+        else if (type === 'tomorrow') { date.setDate(date.getDate() + 1); date.setHours(9,0,0,0); }
+        else if (type === 'plus2') { date.setHours(date.getHours() + 2); }
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        input.value = date.toISOString().slice(0, 16);
+    }
+
+    // REALTIME SETTINGS SYNC
+    db.ref('users').on('value', snap => {
+        allUsers = snap.val() || {};
+        updateTeamFilters();
+        updateUserDropdowns();
+        updateChatUserList();
+        renderStaffList();
+    });
+
+    db.ref('settings/projects').on('value', snap => {
+        systemProjects = snap.val() || { 'Raichandani Mall': true, 'General Site': true };
+        renderProjectsList();
+        populateProjectDropdowns();
+    });
+
+    db.ref('settings/categories').on('value', snap => {
+        systemCategories = snap.val() || { 'Interior Design': true, 'Modular Work': true, 'Civil / Electrical': true };
+        renderCategoriesList();
+        populateCategoryDropdowns();
+    });
+
+    if (currentUser) startApp();
+
+    function handleLogin() {
+        const u = document.getElementById('userIn').value.toLowerCase().trim();
+        const p = document.getElementById('passIn').value;
+        if (allUsers[u] && allUsers[u].password === p) {
+            currentUser = { name: u, role: allUsers[u].role || 'staff' };
+            setSession(currentUser);
+            startApp();
+        } else { alert("Login failed. Check credentials."); }
+    }
+
+    function logout() {
+        localStorage.removeItem('casa_session');
+        document.cookie = "casa_session=; max-age=0; path=/";
+        location.reload();
+    }
+
+    function startApp() {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        document.getElementById('welcomeMsg').innerText = "Logged as: " + currentUser.name.toUpperCase();
+        document.getElementById('taskFormArea').style.display = 'block';
+        setQuickDate('tDate', 'now');
+        
+        if (currentUser.role === 'admin' || currentUser.name === 'admin' || currentUser.name === 'chetan') {
+            currentUser.role = 'admin';
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            if (!activeFilters.team) {
+                const firstStaff = Object.keys(allUsers).find(n => n !== 'admin');
+                if (firstStaff) activeFilters.team = firstStaff;
+            }
+        } else { 
+            activeFilters.team = currentUser.name; 
+        }
+
+        // Default assignee to self for non-admin staff
+        const tUserSel = document.getElementById('tUser');
+        if (tUserSel && currentUser.role !== 'admin') {
+            tUserSel.value = currentUser.name;
+        }
+        
+        syncTasks();
+        syncArchivedTasks();
+        listenForUnreadMessages();
+    }
+
+    // HEADER TOGGLES
+    function toggleHeaderSearch() {
+        const popup = document.getElementById('headerSearchPopup');
+        const isVisible = popup.style.display === 'block';
+        popup.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) document.getElementById('globalSearchInput').focus();
+    }
+
+    function toggleActivityModal(show) {
+        document.getElementById('activityModal').style.display = show ? 'flex' : 'none';
+    }
+
+    // DASHBOARD VIEW MODE TOGGLE
+    function setViewMode(mode) {
+        currentViewMode = mode;
+        const mainContainer = document.getElementById('mainApp');
+        mainContainer.classList.remove('view-kanban', 'view-list', 'view-compact', 'view-minimal', 'view-details');
+        mainContainer.classList.add(`view-${mode}`);
+
+        ['kanban', 'list', 'compact', 'minimal', 'details'].forEach(m => {
+            const btn = document.getElementById(`vbtn-${m}`);
+            if (btn) btn.classList.toggle('active', m === mode);
+        });
+
+        filterTasksLive();
+    }
+
+    function toggleSectionExpand(status) {
+        expandedSections[status] = !expandedSections[status];
+        filterTasksLive();
+    }
+
+    // PUSH NOTIFICATIONS
+    function requestPushNotificationPermission() {
+        if (!("Notification" in window)) {
+            alert("Push notifications are not supported in this browser.");
+            return;
+        }
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                new Notification("Urban Casa Command Center", { body: "Notifications enabled!", icon: "https://cdn-icons-png.flaticon.com/512/3233/3233483.png" });
+                alert("Desktop/Mobile push notifications enabled!");
+            } else { alert("Notification permission denied."); }
+        });
+    }
+
+    function triggerPushAlert(title, bodyText) {
+        playRingSound();
+        if (Notification.permission === "granted") {
+            try { new Notification(title, { body: bodyText, icon: "https://cdn-icons-png.flaticon.com/512/3233/3233483.png" }); }
+            catch(e) {}
+        }
+    }
+
+    function playRingSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const playNote = (freq, delay) => {
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'triangle'; osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+                gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + delay + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + 0.3);
+                osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.4);
+            };
+            playNote(523.25, 0); playNote(659.25, 0.15); playNote(783.99, 0.3);      
+        } catch (e) {}
+    }
+
+    // TASK SYNC & GLOBAL FILTERING
+    let initialTaskSync = true;
+    function syncTasks() {
+        db.ref('tasks').on('value', snap => {
+            const newTasks = snap.val() || {};
+            if (!initialTaskSync) {
+                Object.keys(newTasks).forEach(id => {
+                    if (!currentTasksCache[id] && newTasks[id].assignedTo === currentUser.name) {
+                        triggerPushAlert("New Task Assigned!", newTasks[id].title);
+                    }
+                });
+            }
+            initialTaskSync = false;
+            currentTasksCache = newTasks;
+            filterTasksLive();
+        });
+    }
+
+    function syncArchivedTasks() {
+        db.ref('archived_tasks').on('value', snap => {
+            archivedTasksCache = snap.val() || {};
+            renderArchiveList();
+        });
+    }
+
+    function populateProjectDropdowns() {
+        const pList = Object.keys(systemProjects);
+        ['tProject', 'dProjectInput', 'projectFilter'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const cur = sel.value;
+            sel.innerHTML = id === 'projectFilter' ? `<option value="all">All Projects</option>` : `<option value="" disabled selected>-- Select Project --</option>`;
+            pList.forEach(p => { sel.innerHTML += `<option value="${p}">${p}</option>`; });
+            if (cur && (cur === 'all' || pList.includes(cur))) sel.value = cur;
+        });
+    }
+
+    function populateCategoryDropdowns() {
+        const cList = Object.keys(systemCategories);
+        ['tCategory', 'dCategoryInput', 'categoryFilter'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const cur = sel.value;
+            sel.innerHTML = id === 'categoryFilter' ? `<option value="all">All Categories</option>` : `<option value="" disabled selected>-- Select Category --</option>`;
+            cList.forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
+            if (cur && (cur === 'all' || cList.includes(cur))) sel.value = cur;
+        });
+    }
+
+    function filterTasksLive() {
+        const globalSearch = (document.getElementById('globalSearchInput')?.value || '').toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const project = document.getElementById('projectFilter').value;
+        const category = document.getElementById('categoryFilter').value;
+        
+        let filtered = {};
+        Object.keys(currentTasksCache).forEach(id => {
+            const t = currentTasksCache[id];
+            const matchesTeam = (currentUser.role === 'admin' && activeFilters.team === 'ALL') || 
+                                (t.assignedTo && t.assignedTo.toLowerCase() === activeFilters.team.toLowerCase());
+            
+            const matchesSearch = !globalSearch || 
+                (t.title && t.title.toLowerCase().includes(globalSearch)) || 
+                (t.assignedTo && t.assignedTo.toLowerCase().includes(globalSearch)) ||
+                (t.project && t.project.toLowerCase().includes(globalSearch)) ||
+                (t.category && t.category.toLowerCase().includes(globalSearch)) ||
+                (t.priority && t.priority.toLowerCase().includes(globalSearch));
+
+            const matchesStatus = status === 'all' || t.status === status;
+            const matchesProject = project === 'all' || t.project === project;
+            const matchesCategory = category === 'all' || t.category === category;
+
+            if (matchesTeam && matchesSearch && matchesStatus && matchesProject && matchesCategory) {
+                filtered[id] = t;
+            }
+        });
+
+        renderKanbanCards(filtered);
+    }
+
+    function renderKanbanCards(tasks) {
+        ['new', 'in-progress', 'pending', 'completed'].forEach(col => {
+            const el = document.getElementById(`col-${col}`);
+            const expEl = document.getElementById(`expand-${col}`);
+            if (el) el.innerHTML = '';
+            if (expEl) expEl.innerHTML = '';
+        });
+
+        const priorityWeight = { 'Urgent': 3, 'Moderate': 2, 'Upcoming': 1 };
+        const now = Date.now();
+        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+        let taskList = Object.keys(tasks || {}).map(id => ({ id, ...tasks[id] }));
+
+        taskList.sort((a, b) => {
+            const priA = priorityWeight[a.priority] || 0;
+            const priB = priorityWeight[b.priority] || 0;
+            if (priA !== priB) return priB - priA;
+
+            const dateA = new Date(a.dueDate || a.createdAt || 0).getTime();
+            const dateB = new Date(b.dueDate || b.createdAt || 0).getTime();
+            return dateA - dateB;
+        });
+
+        let totalCount = 0;
+        ['new', 'in-progress', 'pending', 'completed'].forEach(st => {
+            const colTasks = taskList.filter(t => t.status === st);
+            const count = colTasks.length;
+            totalCount += count;
+            const badge = document.getElementById(`cnt-${st}`);
+            if (badge) badge.innerText = count;
+
+            const col = document.getElementById(`col-${st}`);
+            const expCol = document.getElementById(`expand-${st}`);
+            if (!col) return;
+
+            const isExpanded = expandedSections[st];
+            const visibleTasks = isExpanded ? colTasks : colTasks.slice(0, 10);
+
+            visibleTasks.forEach(task => {
+                const lastUpdated = task.updatedAt || task.createdAt || 0;
+                const isStale = (task.status !== 'completed') && ((now - new Date(lastUpdated).getTime()) > THREE_DAYS_MS);
+
+                let cardContent = '';
+                if (currentViewMode === 'minimal') {
+                    cardContent = `
+                        <div class="task-card card-${task.status} ${isStale ? 'is-stale' : ''}" id="card-${task.id}" onclick="openDrawer('${task.id}')">
+                            <div class="card-title" style="margin:0; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
+                                <span>${task.title}</span>
+                                <span style="font-size:9px; opacity:0.7;">${task.assignedTo ? task.assignedTo.toUpperCase() : ''}</span>
+                            </div>
+                        </div>`;
+                } else if (currentViewMode === 'compact') {
+                    cardContent = `
+                        <div class="task-card card-${task.status} ${isStale ? 'is-stale' : ''}" id="card-${task.id}" onclick="openDrawer('${task.id}')">
+                            <div class="card-title">${task.title}</div>
+                            <div style="font-size:10px; color:#666; display:flex; justify-content:space-between;">
+                                <span>📁 ${task.project || 'General'}</span>
+                                <span>👤 ${task.assignedTo ? task.assignedTo.toUpperCase() : ''}</span>
+                            </div>
+                        </div>`;
+                } else {
+                    cardContent = `
+                        <div class="task-card card-${task.status} ${isStale ? 'is-stale' : ''}" 
+                             draggable="true" ondragstart="drag(event, '${task.id}')" 
+                             id="card-${task.id}" onclick="openDrawer('${task.id}')">
+                            
+                            <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; color:var(--accent); text-transform:uppercase; margin-bottom:4px;">
+                                <span>📁 ${task.project || 'General'}</span>
+                                <span style="color:#718096;">🏷️ ${task.category || 'General'}</span>
+                            </div>
+                            <div class="card-title">
+                                ${task.title}
+                                ${isStale ? '<span class="stale-badge">⚠️ IDLE >3 DAYS</span>' : ''}
+                            </div>
+                            
+                            <div style="font-size:11px; color:#666; display:flex; justify-content:space-between; align-items:center;">
+                                <span>👤 ${task.assignedTo ? task.assignedTo.toUpperCase() : 'UNASSIGNED'}</span>
+                                <span class="pri-tag tag-${(task.priority || 'moderate').toLowerCase()}">${task.priority || 'Moderate'}</span>
+                            </div>
+                            
+                            <div style="font-size:10px; color:#999; margin-top:6px;">
+                                📅 ${task.dueDate ? new Date(task.dueDate).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : 'No date'}
+                            </div>
+                        </div>`;
+                }
+
+                col.innerHTML += cardContent;
+            });
+
+            if (count > 10 && expCol) {
+                const hiddenCount = count - 10;
+                expCol.innerHTML = `
+                    <button class="expand-btn" onclick="toggleSectionExpand('${st}')">
+                        ${isExpanded ? '▲ Collapse Section' : `📂 View All ${count} Works (${hiddenCount} More)`}
+                    </button>`;
+            }
+        });
+
+        document.getElementById('taskBadge').innerText = totalCount;
+    }
+
+    // RAPID TASK CREATION & VALIDATION WITH CONFIRMATION
+    function createTask(e) {
+        e.preventDefault();
+        const title = document.getElementById('tTitle').value.trim();
+        const project = document.getElementById('tProject').value;
+        const category = document.getElementById('tCategory').value || 'General';
+        const assignedTo = document.getElementById('tUser').value;
+        const priority = document.getElementById('tPriority').value;
+        const dueDate = document.getElementById('tDate').value;
+
+        if (!project) {
+            alert("Please select a project before assigning.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to assign task "${title}" to ${assignedTo.toUpperCase()} under project "${project}"?`)) {
+            return;
+        }
+
+        const newTaskRef = db.ref('tasks').push();
+        const now = Date.now();
+        newTaskRef.set({
+            title, project, category, assignedTo, priority, dueDate,
+            status: 'new',
+            createdAt: now,
+            updatedAt: now,
+            history: [{ text: `Task created under project [${project.toUpperCase()}] / category [${category.toUpperCase()}] and assigned to ${assignedTo.toUpperCase()}`, user: currentUser.name, date: now }]
+        }).then(() => {
+            document.getElementById('tTitle').value = '';
+            document.getElementById('tProject').selectedIndex = 0;
+            document.getElementById('tCategory').selectedIndex = 0;
+            setQuickDate('tDate', 'now');
+            triggerPushAlert("New Task Assigned", title);
+            logActivity(`Created task: "${title}" (${project}) for ${assignedTo.toUpperCase()}`);
+        });
+    }
+
+    function openDrawer(taskId) {
+        currentOpenTaskId = taskId;
+        const t = currentTasksCache[taskId];
+        if (!t) {
+            db.ref('tasks/' + taskId).once('value').then(snap => {
+                const taskData = snap.val();
+                if (taskData) {
+                    currentTasksCache[taskId] = taskData;
+                    populateDrawer(taskId, taskData);
+                } else { alert("Task not found."); }
+            });
+            return;
+        }
+        populateDrawer(taskId, t);
+    }
+
+    function populateDrawer(taskId, t) {
+        document.getElementById('dTitleInput').value = t.title || '';
+        document.getElementById('dProjectInput').value = t.project || '';
+        document.getElementById('dCategoryInput').value = t.category || '';
+        
+        const assigneeSel = document.getElementById('dAssigneeInput');
+        assigneeSel.value = t.assignedTo || '';
+
+        document.getElementById('dMeta').innerText = `Assigned To: ${(t.assignedTo || 'Unassigned').toUpperCase()} | Created: ${new Date(t.createdAt || Date.now()).toLocaleDateString()}`;
+        document.getElementById('dPriorityInput').value = t.priority || 'Moderate';
+        document.getElementById('dStatusInput').value = t.status || 'new';
+        document.getElementById('dDateInput').value = t.dueDate || getNowISO();
+
+        const histUI = document.getElementById('dHistory');
+        histUI.innerHTML = '';
+        (t.history || []).forEach(h => {
+            let noteContent = h.text || '';
+            if (h.audio) { noteContent += `<br><audio controls src="${h.audio}" style="width:100%; margin-top:5px;"></audio>`; }
+            histUI.innerHTML += `
+                <div class="history-item">
+                    <strong>${(h.user || 'system').toUpperCase()}</strong> <span style="font-size:10px; color:#999;">(${new Date(h.date || Date.now()).toLocaleString()})</span>
+                    <div>${noteContent}</div>
+                </div>
+            `;
+        });
+
+        const delArea = document.getElementById('deleteTaskArea');
+        if (currentUser.role === 'admin' || t.assignedTo === currentUser.name) {
+            delArea.innerHTML = `<button onclick="archiveTask('${taskId}')" class="save-btn" style="background:var(--alert); font-size:11px; padding:8px;">Move to Archive / Delete</button>`;
+        } else { delArea.innerHTML = ''; }
+
+        document.getElementById('taskDrawer').style.display = 'flex';
+    }
+
+    function closeDrawer(e) {
+        if (e.target.id === 'taskDrawer') document.getElementById('taskDrawer').style.display = 'none';
+    }
+
+    function saveTaskUpdate() {
+        if (!currentOpenTaskId) return;
+        const newTitle = document.getElementById('dTitleInput').value.trim();
+        const newProject = document.getElementById('dProjectInput').value;
+        const newCategory = document.getElementById('dCategoryInput').value;
+        const newAssignee = currentUser.role === 'admin' ? document.getElementById('dAssigneeInput').value : currentTasksCache[currentOpenTaskId].assignedTo;
+        const note = document.getElementById('dNoteInput').value.trim();
+        const newPriority = document.getElementById('dPriorityInput').value;
+        const newStatus = document.getElementById('dStatusInput').value;
+        const newDate = document.getElementById('dDateInput').value;
+
+        if (!newProject) {
+            alert("Please select a project.");
+            return;
+        }
+
+        const t = currentTasksCache[currentOpenTaskId] || {};
+        let hist = t.history || [];
+        const now = Date.now();
+
+        if (newTitle !== t.title) hist.push({ text: `Title changed to "${newTitle}"`, user: currentUser.name, date: now });
+        if (newProject !== t.project) hist.push({ text: `Project moved to [${newProject.toUpperCase()}]`, user: currentUser.name, date: now });
+        if (newCategory !== t.category) hist.push({ text: `Category changed to [${newCategory.toUpperCase()}]`, user: currentUser.name, date: now });
+        if (note) hist.push({ text: note, user: currentUser.name, date: now });
+        if (newStatus !== t.status) hist.push({ text: `Status updated to ${newStatus.toUpperCase()}`, user: currentUser.name, date: now });
+        if (newPriority !== t.priority) hist.push({ text: `Priority changed to ${newPriority}`, user: currentUser.name, date: now });
+
+        db.ref('tasks/' + currentOpenTaskId).update({
+            title: newTitle, project: newProject, category: newCategory,
+            assignedTo: newAssignee, priority: newPriority, status: newStatus,
+            dueDate: newDate, updatedAt: now, history: hist
+        }).then(() => {
+            document.getElementById('dNoteInput').value = '';
+            document.getElementById('taskDrawer').style.display = 'none';
+            triggerPushAlert("Task Updated", newTitle);
+            logActivity(`Updated task "${newTitle}" (${newProject})`);
+        });
+    }
+
+    // ARCHIVE & TRASH BIN
+    function archiveTask(id) {
+        if (confirm("Move this task to the Archive / Trash bin?")) {
+            const taskData = currentTasksCache[id];
+            if (!taskData) return;
+            db.ref('archived_tasks/' + id).set({
+                ...taskData, deletedBy: currentUser.name, deletedAt: Date.now()
+            }).then(() => {
+                db.ref('tasks/' + id).remove().then(() => {
+                    document.getElementById('taskDrawer').style.display = 'none';
+                    logActivity(`Archived task: "${taskData.title}"`);
+                });
+            });
+        }
+    }
+
+    function toggleArchiveModal(show) { document.getElementById('archiveModal').style.display = show ? 'flex' : 'none'; }
+
+    function renderArchiveList() {
+        const list = document.getElementById('archiveListUI');
+        if (!list) return;
+        list.innerHTML = '';
+        const items = Object.keys(archivedTasksCache || {});
+        if (items.length === 0) {
+            list.innerHTML = `<div style="text-align:center; color:#999; font-size:12px; margin-top:20px;">Archive is empty.</div>`;
+            return;
+        }
+        items.forEach(id => {
+            const t = archivedTasksCache[id];
+            list.innerHTML += `
+                <div style="background:white; padding:12px; border-radius:8px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:bold; font-size:13px; text-transform:uppercase;">${t.title}</div>
+                        <div style="font-size:10px; color:#666;">Project: ${t.project || 'General'} | Deleted by: ${(t.deletedBy || 'Admin').toUpperCase()}</div>
+                    </div>
+                    ${currentUser.role === 'admin' ? `
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="restoreTask('${id}')" style="background:var(--status-completed); color:white; border:none; padding:6px 10px; border-radius:6px; font-size:10px; cursor:pointer;">Restore</button>
+                            <button onclick="permanentDeleteTask('${id}')" style="background:var(--alert); color:white; border:none; padding:6px 10px; border-radius:6px; font-size:10px; cursor:pointer;">Purge</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+    }
+
+    function restoreTask(id) {
+        const t = archivedTasksCache[id]; if (!t) return;
+        const { deletedBy, deletedAt, ...taskData } = t;
+        db.ref('tasks/' + id).set(taskData).then(() => {
+            db.ref('archived_tasks/' + id).remove().then(() => logActivity(`Restored task: "${taskData.title}"`));
+        });
+    }
+
+    function permanentDeleteTask(id) {
+        if (confirm("Permanently purge this task from the system?")) {
+            db.ref('archived_tasks/' + id).remove().then(() => logActivity(`Permanently deleted task #${id}`));
+        }
+    }
+
+    // AUDIO RECORDING FOR NOTES
+    async function toggleAudioRecording() {
+        const btn = document.getElementById('recordAudioBtn');
+        if (isRecording) {
+            mediaRecorder.stop(); isRecording = false;
+            btn.classList.remove('recording'); btn.innerText = '🎤';
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream); audioChunks = [];
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
+                    reader.onloadend = () => saveAudioToTask(reader.result);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                mediaRecorder.start(); isRecording = true;
+                btn.classList.add('recording'); btn.innerText = '⏹️';
+            } catch (err) { alert("Microphone access denied."); }
+        }
+    }
+
+    function saveAudioToTask(base64Data) {
+        if (!currentOpenTaskId) return;
+        const t = currentTasksCache[currentOpenTaskId] || {};
+        let hist = t.history || [];
+        hist.push({ text: "🎤 Voice Note Recorded", audio: base64Data, user: currentUser.name, date: Date.now() });
+        db.ref('tasks/' + currentOpenTaskId).update({ history: hist, updatedAt: Date.now() }).then(() => openDrawer(currentOpenTaskId));
+    }
+
+    // KANBAN DRAG & DROP
+    function allowDrop(e) { e.preventDefault(); }
+    function drag(e, id) { e.dataTransfer.setData("text", id); }
+    function drop(e) {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text");
+        const newStatus = e.currentTarget.getAttribute("data-status");
+        if (id && newStatus) {
+            const t = currentTasksCache[id];
+            if (t) {
+                let hist = t.history || [];
+                const now = Date.now();
+                hist.push({ text: `Moved to ${newStatus.toUpperCase()}`, user: currentUser.name, date: now });
+                db.ref('tasks/' + id).update({ status: newStatus, updatedAt: now, history: hist });
+                logActivity(`Moved "${t.title}" to ${newStatus.toUpperCase()}`);
+            }
+        }
+    }
+
+    // DIRECT MESSAGING
+    function getChatId(u1, u2) { return [u1, u2].sort().join('_'); }
+
+    function updateChatUserList() {
+        const sel = document.getElementById('chatUserSelect'); if (!sel) return;
+        const cur = sel.value; sel.innerHTML = '';
+        Object.keys(allUsers).forEach(u => {
+            if (u !== currentUser.name) sel.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`;
+        });
+        if (cur && allUsers[cur]) sel.value = cur;
+        activeChatPartner = sel.value;
+    }
+
+    function loadActiveChat() {
+        activeChatPartner = document.getElementById('chatUserSelect').value; if (!activeChatPartner) return;
+        const chatId = getChatId(currentUser.name, activeChatPartner);
+        db.ref(`unread/${currentUser.name}/${activeChatPartner}`).set(false);
+        if (currentChatRef) currentChatRef.off();
+        
+        currentChatRef = db.ref(`direct_messages/${chatId}`).orderByChild('timestamp').limitToLast(50);
+        currentChatRef.on('value', snap => {
+            const msgs = snap.val() || {};
+            const list = document.getElementById('msgListUI'); list.innerHTML = '';
+            const sorted = Object.values(msgs).sort((a,b) => a.timestamp - b.timestamp);
+            if (sorted.length === 0) list.innerHTML = `<div style="text-align:center; color:#999; font-size:12px; margin-top:20px;">No messages yet with ${activeChatPartner.toUpperCase()}!</div>`;
+            sorted.forEach(m => {
+                const isMe = m.sender === currentUser.name;
+                list.innerHTML += `
+                    <div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? 'var(--accent)' : '#e3e6e8'}; color: ${isMe ? 'white' : '#333'}; padding: 10px 14px; border-radius: 12px; max-width: 80%; font-size: 13px; word-break: break-word;">
+                        <div style="font-size: 10px; opacity: 0.8; margin-bottom: 2px; font-weight: bold;">${m.sender.toUpperCase()}</div>
+                        <div>${m.text}</div>
+                        <div style="font-size: 9px; opacity: 0.7; text-align: right; margin-top: 4px;">${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                    </div>`;
+            });
+            list.scrollTop = list.scrollHeight;
+        });
+    }
+
+    function sendPrivateMessage() {
+        const textInput = document.getElementById('newMsgText'); const text = textInput.value.trim();
+        if (!text || !activeChatPartner) return;
+        const chatId = getChatId(currentUser.name, activeChatPartner);
+        db.ref(`direct_messages/${chatId}`).push({ sender: currentUser.name, text: text, timestamp: Date.now() }).then(() => {
+            textInput.value = '';
+            db.ref(`unread/${activeChatPartner}/${currentUser.name}`).set(true);
+            triggerPushAlert("New DM from " + currentUser.name.toUpperCase(), text);
+        });
+    }
+
+    function toggleMsgModal(show) {
+        document.getElementById('msgModal').style.display = show ? 'flex' : 'none';
+        if (show) { updateChatUserList(); loadActiveChat(); }
+        else if (currentChatRef) currentChatRef.off();
+    }
+
+    function listenForUnreadMessages() {
+        db.ref(`unread/${currentUser.name}`).on('value', snap => {
+            const hasUnread = Object.values(snap.val() || {}).some(val => val === true);
+            const badge = document.getElementById('msgBadge');
+            if (badge) badge.style.display = hasUnread ? 'block' : 'none';
+        });
+    }
+
+    // REAL-TIME ACTIVITY LOG SYNC
+    function logActivity(text) { db.ref('activity_log').push({ text, user: currentUser.name, timestamp: Date.now() }); }
+
+    db.ref('activity_log').limitToLast(50).on('value', snap => {
+        const logs = snap.val() || {}; 
+        const feed = document.getElementById('activityModalListUI');
+        if (!feed) return; 
+        feed.innerHTML = '';
+        const sortedLogs = Object.values(logs).sort((a,b) => b.timestamp - a.timestamp);
+        if (sortedLogs.length === 0) {
+            feed.innerHTML = `<div style="text-align:center; color:#999; font-size:12px; margin-top:20px;">No recent activity.</div>`;
+            return;
+        }
+        sortedLogs.forEach(l => {
+            feed.innerHTML += `
+                <div style="background:white; padding:10px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                        <strong style="color:var(--primary); text-transform:uppercase;">${l.user || 'system'}</strong>
+                        <span style="font-size:9px; color:#aaa;">${new Date(l.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div style="color:#333;">${l.text}</div>
+                </div>
+            `;
+        });
+    });
+
+    function updateTeamFilters() {
+        const bar = document.getElementById('teamFilterBar'); if (!bar) return;
+        bar.innerHTML = `<button class="filter-btn ${activeFilters.team === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')">ALL STAFF</button>`;
+        Object.keys(allUsers).forEach(u => {
+            if (u !== 'admin') {
+                bar.innerHTML += `<button class="filter-btn ${activeFilters.team === u ? 'active' : ''}" onclick="setTeamFilter('${u}')">${u.toUpperCase()}</button>`;
+            }
+        });
+    }
+
+    function setTeamFilter(teamName) { activeFilters.team = teamName; updateTeamFilters(); filterTasksLive(); }
+
+    function updateUserDropdowns() {
+        ['tUser', 'dAssigneeInput'].forEach(id => {
+            const sel = document.getElementById(id); if (!sel) return;
+            const cur = sel.value; sel.innerHTML = '';
+            Object.keys(allUsers).forEach(u => { sel.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`; });
+            if (cur) sel.value = cur;
+        });
+        const tUserSel = document.getElementById('tUser');
+        if (tUserSel && currentUser && currentUser.role !== 'admin') {
+            tUserSel.value = currentUser.name;
+        }
+    }
+
+    function toggleAdminModal(show) { 
+        document.getElementById('adminModal').style.display = show ? 'flex' : 'none'; 
+        if (show && currentUser.role !== 'admin') {
+            switchSettingsTab('projects');
+        }
+    }
+
+    function switchSettingsTab(tab) {
+        ['Staff', 'Projects', 'Categories'].forEach(t => {
+            const el = document.getElementById(`settingsSection${t}`);
+            const btn = document.getElementById(`tab${t === 'Staff' ? 'Staff' : t === 'Projects' ? 'Proj' : 'Cat'}`);
+            if (el) el.style.display = t.toLowerCase() === tab ? 'block' : 'none';
+            if (btn) btn.classList.toggle('active', t.toLowerCase() === tab);
+        });
+    }
+
+    function addProjectSetting() {
+        const pName = document.getElementById('newProjectName').value.trim();
+        if (pName) {
+            db.ref('settings/projects/' + pName).set(true).then(() => {
+                document.getElementById('newProjectName').value = '';
+                logActivity(`Added project: ${pName}`);
+            });
+        }
+    }
+    function removeProjectSetting(pName) {
+        if (currentUser.role !== 'admin') { alert("Only admins can remove projects."); return; }
+        if (confirm(`Remove project "${pName}"?`)) { 
+            db.ref('settings/projects/' + pName).remove().then(() => logActivity(`Removed project: ${pName}`)); 
+        }
+    }
+    function renderProjectsList() {
+        const list = document.getElementById('projectListUI'); if (!list) return;
+        list.innerHTML = '';
+        Object.keys(systemProjects).forEach(p => {
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            list.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
+                    <div>📁 <strong>${p}</strong></div>
+                    ${isAdmin ? `<button onclick="removeProjectSetting('${p}')" style="background:var(--alert); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Remove</button>` : ''}
+                </div>`;
+        });
+    }
+
+    function addCategorySetting() {
+        const cName = document.getElementById('newCategoryName').value.trim();
+        if (cName) {
+            db.ref('settings/categories/' + cName).set(true).then(() => {
+                document.getElementById('newCategoryName').value = '';
+                logActivity(`Added category: ${cName}`);
+            });
+        }
+    }
+    function removeCategorySetting(cName) {
+        if (currentUser.role !== 'admin') { alert("Only admins can remove categories."); return; }
+        if (confirm(`Remove category "${cName}"?`)) { 
+            db.ref('settings/categories/' + cName).remove().then(() => logActivity(`Removed category: ${cName}`)); 
+        }
+    }
+    function renderCategoriesList() {
+        const list = document.getElementById('categoryListUI'); if (!list) return;
+        list.innerHTML = '';
+        Object.keys(systemCategories).forEach(c => {
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            list.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
+                    <div>🏷️ <strong>${c}</strong></div>
+                    ${isAdmin ? `<button onclick="removeCategorySetting('${c}')" style="background:var(--alert); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Remove</button>` : ''}
+                </div>`;
+        });
+    }
+
+    function addStaffMember() {
+        if (currentUser.role !== 'admin') return;
+        const name = document.getElementById('newStaffName').value.toLowerCase().trim();
+        const pass = document.getElementById('newStaffPass').value;
+        const role = document.getElementById('newStaffRole').value;
+        if (name && pass) {
+            db.ref('users/' + name).set({ password: pass, role: role }).then(() => {
+                document.getElementById('newStaffName').value = '';
+                document.getElementById('newStaffPass').value = '';
+                alert(`Staff member ${name.toUpperCase()} added.`);
+            });
+        }
+    }
+
+    function renderStaffList() {
+        const list = document.getElementById('staffListUI'); if (!list) return; list.innerHTML = '';
+        Object.keys(allUsers).forEach(u => {
+            list.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;">
+                    <div><strong>${u.toUpperCase()}</strong> (${allUsers[u].role})</div>
+                    ${u !== 'admin' ? `<button onclick="deleteStaff('${u}')" style="background:var(--alert); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Remove</button>` : ''}
+                </div>`;
+        });
+    }
+
+    function deleteStaff(username) {
+        if (currentUser.role !== 'admin') return;
+        if (confirm(`Remove user ${username.toUpperCase()}?`)) { db.ref('users/' + username).remove(); }
+    }
+
+    // MEETING CHECKLIST PDF EXPORTER
+    function exportPDF(mode) {
+        const element = document.createElement('div');
+        element.style.padding = '25px';
+        element.style.fontFamily = 'Helvetica, Arial, sans-serif';
+        element.style.color = '#333';
+
+        const globalSearch = (document.getElementById('globalSearchInput')?.value || '').toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const project = document.getElementById('projectFilter').value;
+        const category = document.getElementById('categoryFilter').value;
+        
+        let tasksToExport = {};
+        Object.keys(currentTasksCache).forEach(id => {
+            const t = currentTasksCache[id];
+            const matchesTeam = (currentUser.role === 'admin' && activeFilters.team === 'ALL') || (t.assignedTo && t.assignedTo.toLowerCase() === activeFilters.team.toLowerCase());
+            const matchesSearch = !globalSearch || (t.title && t.title.toLowerCase().includes(globalSearch));
+            const matchesStatus = status === 'all' || t.status === status;
+            const matchesProject = project === 'all' || t.project === project;
+            const matchesCategory = category === 'all' || t.category === category;
+            if (matchesTeam && matchesSearch && matchesStatus && matchesProject && matchesCategory) {
+                tasksToExport[id] = t;
+            }
+        });
+
+        const staffGroups = {};
+        Object.values(tasksToExport).forEach(t => {
+            const staff = (t.assignedTo || 'Unassigned').toUpperCase();
+            if (!staffGroups[staff]) staffGroups[staff] = [];
+            staffGroups[staff].push(t);
+        });
+
+        let html = `
+            <div style="border-bottom: 3px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px;">
+                <h1 style="color:#2c3e50; font-size: 22px; text-transform: uppercase; margin: 0;">URBAN CASA — Site & Team Review Checklist</h1>
+                <p style="font-size:11px; color:#666; margin-top: 5px;">
+                    Generated on <strong>${new Date().toLocaleString()}</strong> | Prepared by: <strong>${currentUser.name.toUpperCase()}</strong>
+                </p>
+            </div>`;
+
+        if (Object.keys(staffGroups).length === 0) {
+            html += `<p style="font-size:13px; color:#888;">No work orders found for the selected filters.</p>`;
+        } else {
+            Object.keys(staffGroups).sort().forEach(staff => {
+                html += `
+                    <div style="margin-bottom: 25px; page-break-inside: avoid;">
+                        <h2 style="background: #2c3e50; color: white; font-size: 14px; padding: 6px 12px; border-radius: 4px; margin-bottom: 12px; text-transform: uppercase;">
+                            👤 Staff Member: ${staff}
+                        </h2>`;
+
+                const sections = ['new', 'in-progress', 'pending', 'completed'];
+                sections.forEach(st => {
+                    const stTasks = staffGroups[staff].filter(t => t.status === st);
+                    if (stTasks.length > 0) {
+                        const statusLabel = st === 'new' ? 'NEW ORDERS' : st === 'in-progress' ? 'IN PROGRESS' : st === 'pending' ? 'PENDING / BLOCKED' : 'COMPLETED';
+                        const statusColor = st === 'new' ? '#3498db' : st === 'in-progress' ? '#f1c40f' : st === 'pending' ? '#e67e22' : '#2ecc71';
+
+                        html += `
+                            <div style="margin-left: 10px; margin-bottom: 10px;">
+                                <div style="font-size: 11px; font-weight: bold; color: ${statusColor}; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-bottom: 8px;">
+                                    📌 ${statusLabel} (${stTasks.length})
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 6px;">`;
+
+                        stTasks.forEach(t => {
+                            html += `
+                                <div style="display: flex; align-items: flex-start; font-size: 11px; padding: 4px 0;">
+                                    <span style="display: inline-block; width: 14px; height: 14px; border: 1.5px solid #555; border-radius: 3px; margin-right: 8px; margin-top: 1px; flex-shrink: 0;"></span>
+                                    <div style="flex: 1;">
+                                        <strong style="text-transform: uppercase;">${t.title}</strong>
+                                        <span style="color:#777; font-size:10px; margin-left: 6px;">[Proj: ${t.project || 'General'} | Cat: ${t.category || 'General'} | Pri: ${t.priority || 'Moderate'}]</span>
+                                    </div>
+                                </div>`;
+                        });
+
+                        html += `</div></div>`;
+                    }
+                });
+
+                html += `</div>`;
+            });
+        }
+
+        element.innerHTML = html;
+        html2pdf().set({
+            margin: 10,
+            filename: `UrbanCasa_Meeting_Checklist_${Date.now()}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(element).save();
+    }
+</script>
+</body>
+</html>
