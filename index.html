@@ -21,7 +21,7 @@
     <!-- html2pdf.js Exporter Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -39,157 +39,161 @@
     </script>
 
     <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
         
         @keyframes blink-red {
             0% { box-shadow: 0 0 0px rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.4); }
-            50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.9); border-color: #ef4444 !important; }
+            50% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.8); border-color: #ef4444 !important; }
             100% { box-shadow: 0 0 0px rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.4); }
         }
         .is-overdue {
             animation: blink-red 1.5s infinite ease-in-out;
-            border-left: 5px solid #ef4444 !important;
+            border-left: 4px solid #ef4444 !important;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* Drag & Drop Visual State */
+        .dragging { opacity: 0.35; transform: scale(0.98); }
+        .drag-over { border-color: #0284c7 !important; background-color: rgba(2, 132, 199, 0.04); }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
 
     <!-- INSTALL PWA BANNER -->
-    <div id="installBanner" class="hidden bg-gradient-to-r from-sky-600 to-blue-700 text-white px-4 py-3 flex items-center justify-between shadow-lg sticky top-0 z-[12000]">
-        <div class="flex items-center space-x-3">
-            <i class="fa-solid fa-cloud-arrow-down text-lg"></i>
+    <div id="installBanner" class="hidden bg-gradient-to-r from-sky-600 to-blue-700 text-white px-4 py-2.5 flex items-center justify-between shadow-lg sticky top-0 z-[12000]">
+        <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-cloud-arrow-down text-sm"></i>
             <div>
-                <p class="text-xs font-bold">Install Urban Casa Command Center</p>
-                <p class="text-[10px] text-sky-100">Add to home screen for smooth app experience & instant alerts.</p>
+                <p class="text-[11px] font-bold">Install Urban Casa Command Center</p>
+                <p class="text-[9px] text-sky-100 font-semibold">Add to home screen for instant access & alerts.</p>
             </div>
         </div>
         <div class="flex items-center space-x-2">
-            <button onclick="installPWA()" class="bg-white text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg shadow transition">Install App</button>
-            <button onclick="document.getElementById('installBanner').classList.add('hidden')" class="text-sky-200 hover:text-white text-xs px-2 py-1">✕</button>
+            <button onclick="installPWA()" class="bg-white text-slate-950 font-bold text-[10px] px-2.5 py-1 rounded-md shadow transition">Install</button>
+            <button onclick="document.getElementById('installBanner').classList.add('hidden')" class="text-sky-200 hover:text-white text-[11px] px-1.5 py-0.5">✕</button>
         </div>
     </div>
 
     <!-- LOGIN OVERLAY -->
-    <div id="loginOverlay" class="fixed inset-0 bg-slate-950/95 flex items-center justify-center z-[11000] p-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-sm text-center shadow-2xl space-y-5 animate-fade-in">
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-sky-500 flex items-center justify-center font-black text-slate-950 text-2xl mx-auto shadow-md">
+    <div id="loginOverlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-[11000] p-4">
+        <div class="bg-slate-900 border border-slate-800/80 p-7 rounded-2xl w-full max-w-sm text-center shadow-2xl space-y-4 animate-fade-in">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-500 to-sky-500 flex items-center justify-center font-black text-slate-950 text-xl mx-auto shadow-md">
                 UC
             </div>
             <div>
-                <h2 class="text-lg font-bold text-white tracking-tight">URBAN CASA</h2>
-                <p class="text-xs text-slate-400 mt-1">Command Center Secure Authentication</p>
+                <h2 class="text-sm font-extrabold text-white tracking-wider uppercase">URBAN CASA</h2>
+                <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Secure Authentication Portal</p>
             </div>
-            <div class="space-y-3">
-                <input type="text" id="userIn" placeholder="Username (e.g. Alex Rivera)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
-                <input type="password" id="passIn" placeholder="Password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
-                <button onclick="handleLogin()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs shadow-lg transition">Sign In</button>
+            <div class="space-y-2.5 pt-1">
+                <input type="text" id="userIn" placeholder="Username (e.g. Alex Rivera)" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-[11px] font-semibold text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
+                <input type="password" id="passIn" placeholder="Password" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-[11px] font-semibold text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
+                <button onclick="handleLogin()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-[11px] shadow-lg shadow-sky-600/20 transition">Sign In</button>
             </div>
-            <p class="text-[10px] text-slate-500">Default admin: <code class="text-sky-400">Alex Rivera</code> / <code class="text-sky-400">admin123</code></p>
+            <p class="text-[10px] font-semibold text-slate-500 pt-1">Default admin: <code class="text-sky-400 font-bold">Alex Rivera</code> / <code class="text-sky-400 font-bold">admin123</code></p>
         </div>
     </div>
 
     <!-- MAIN APP CONTAINER -->
-    <div class="flex-1 flex flex-col max-w-[1700px] w-full mx-auto p-4 md:p-6 space-y-5 hidden" id="mainApp">
+    <div class="flex-1 flex flex-col max-w-[1700px] w-full mx-auto p-3 md:p-5 space-y-4 hidden" id="mainApp">
         <!-- TOP NAVIGATION HEADER -->
-        <header class="bg-slate-900/90 backdrop-blur border border-slate-800 sticky top-0 z-30 px-4 py-2.5 rounded-2xl flex items-center justify-between shadow-xl">
-            <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-sky-500 flex items-center justify-center font-black text-slate-950 text-xl shadow-md">
+        <header class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 sticky top-0 z-30 px-3.5 py-2 rounded-xl flex items-center justify-between shadow-xl">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-sky-500 flex items-center justify-center font-black text-slate-950 text-base shadow">
                     UC
                 </div>
                 <div>
-                    <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                        URBAN CASA <span class="text-xs bg-sky-950 text-sky-400 border border-sky-800 px-2 py-0.5 rounded-full font-mono font-medium">Command Center</span>
+                    <h1 class="text-xs font-extrabold tracking-tight text-white flex items-center gap-1.5">
+                        URBAN CASA <span class="text-[9px] bg-sky-950/80 text-sky-400 border border-sky-800/60 px-1.5 py-0.5 rounded font-mono font-bold uppercase">Command Center</span>
                     </h1>
-                    <p id="welcomeMsg" class="text-[10px] text-slate-400 font-medium">Enterprise Site & Operations Hub</p>
+                    <p id="welcomeMsg" class="text-[10px] font-bold text-slate-400 mt-0.5">Welcome</p>
                 </div>
             </div>
 
             <!-- Global Quick Search Bar -->
-            <div class="hidden md:flex items-center flex-1 max-w-md mx-6">
+            <div class="hidden md:flex items-center flex-1 max-w-xs mx-4">
                 <div class="relative w-full">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                    <input type="text" id="globalSearchInput" oninput="filterTasksLive()" placeholder="Global search works, staff, descriptions..." class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-9 pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input type="text" id="globalSearchInput" oninput="filterTasksLive()" placeholder="Search works, staff..." class="w-full bg-slate-950/90 border border-slate-700/80 rounded-lg pl-8 pr-3 py-1.5 text-[11px] font-semibold text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
                 </div>
             </div>
 
             <!-- Header Actions -->
-            <div class="flex items-center space-x-2">
-                <button onclick="exportMinimalPDF()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition" title="Export minimalist staff-wise checklist PDF">
-                    <i class="fa-solid fa-file-pdf text-emerald-400"></i>
-                    <span class="hidden sm:inline">Checklist PDF</span>
+            <div class="flex items-center space-x-1.5">
+                <button onclick="exportMinimalPDF()" class="bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1 transition" title="Export clean checklist PDF">
+                    <i class="fa-solid fa-file-pdf text-emerald-400 text-xs"></i>
+                    <span class="hidden sm:inline">PDF</span>
                 </button>
-                <button onclick="toggleActivityModal(true)" title="Live Activity Feed" class="p-2 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded-lg relative transition text-base">
+                <button onclick="toggleActivityModal(true)" title="Live Activity Feed" class="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-800/80 rounded-lg relative transition text-xs font-bold">
                     📡
-                    <span id="liveFeedBadge" class="hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
+                    <span id="liveFeedBadge" class="hidden absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-sky-500 animate-ping"></span>
                 </button>
-                <button onclick="toggleArchiveModal(true)" id="trashBtn" title="Archive / Trash Bin" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition relative admin-only">
-                    <i class="fa-solid fa-trash-can text-sm"></i>
-                    <span id="trashBadge" class="hidden absolute -top-0.5 -right-0.5 bg-rose-600 text-white text-[9px] font-bold px-1 rounded-full">0</span>
+                <button onclick="toggleArchiveModal(true)" id="trashBtn" title="Archive / Trash Bin" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 rounded-lg transition relative">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                    <span id="trashBadge" class="hidden absolute -top-0.5 -right-0.5 bg-rose-600 text-white text-[8px] font-extrabold px-1 rounded-full">0</span>
                 </button>
-                <button onclick="toggleMsgModal(true)" title="Direct Messages" class="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition relative">
-                    <i class="fa-solid fa-comments text-sm"></i>
-                    <span id="msgBadge" class="hidden absolute -top-0.5 -right-0.5 bg-amber-500 text-slate-950 font-extrabold text-[9px] px-1 rounded-full">0</span>
+                <button onclick="toggleMsgModal(true)" title="Direct Messages" class="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 rounded-lg transition relative">
+                    <i class="fa-solid fa-comments text-xs"></i>
+                    <span id="msgBadge" class="hidden absolute -top-0.5 -right-0.5 bg-amber-500 text-slate-950 font-extrabold text-[8px] px-1 rounded-full">0</span>
                 </button>
-                <button onclick="requestPushNotificationPermission()" title="Enable Notifications" class="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition">
-                    <i class="fa-solid fa-bell text-sm"></i>
+                <button onclick="requestPushNotificationPermission()" title="Enable Notifications" class="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/80 rounded-lg transition">
+                    <i class="fa-solid fa-bell text-xs"></i>
                 </button>
-                <button onclick="toggleAdminModal(true)" title="Staff Settings" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition">
-                    <i class="fa-solid fa-gear text-sm"></i>
+                <button onclick="toggleAdminModal(true)" title="Settings & Staff Roster" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 rounded-lg transition">
+                    <i class="fa-solid fa-gear text-xs"></i>
                 </button>
-                <div class="h-5 w-px bg-slate-800 mx-1"></div>
-                <button onclick="logout()" class="text-rose-400 hover:text-rose-300 font-bold text-xs px-2 py-1 transition">Logout</button>
+                <div class="h-4 w-px bg-slate-800 mx-0.5"></div>
+                <button onclick="logout()" class="text-rose-400 hover:text-rose-300 font-bold text-[10px] px-2 py-1 transition">Logout</button>
             </div>
         </header>
 
-        <!-- RAPID TASK CREATION FORM (Single Row: Work Details + Staff + Assign Button) -->
-        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
-            <form id="taskForm" onsubmit="createTask(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                <input type="text" id="tTitle" placeholder="⚡ Quick Work / Reminder Description..." required class="md:col-span-6 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 font-bold focus:outline-none focus:border-sky-500">
-                <select id="tUser" class="md:col-span-4 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500"></select>
-                <button type="submit" class="md:col-span-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold text-xs py-2.5 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-1.5">+ Assign</button>
+        <!-- RAPID TASK CREATION FORM -->
+        <section class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-lg">
+            <form id="taskForm" onsubmit="createTask(event)" class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
+                <input type="text" id="tTitle" placeholder="⚡ Quick Work / Reminder Description..." required class="md:col-span-8 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] text-slate-100 font-bold focus:outline-none focus:border-sky-500 placeholder-slate-500">
+                <select id="tUser" class="md:col-span-2 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-sky-500"></select>
+                <button type="submit" class="md:col-span-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-[11px] py-2 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-1.5">+ Assign Work</button>
             </form>
         </section>
 
         <!-- TEAM FILTER BAR -->
-        <div class="flex items-center justify-between bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-2 text-xs">
-            <span class="text-slate-400 font-bold uppercase text-[10px]">Filter Staff Assignment</span>
-            <div id="teamFilterBar" class="flex gap-2 overflow-x-auto pb-1"></div>
+        <div class="flex items-center justify-between bg-slate-900/60 border border-slate-800/80 rounded-xl px-3.5 py-1.5 text-[11px]">
+            <span class="text-slate-400 font-extrabold uppercase tracking-wider text-[9px]">Filter Staff Assignment</span>
+            <div id="teamFilterBar" class="flex gap-1.5 overflow-x-auto py-0.5"></div>
         </div>
 
-        <!-- KANBAN BOARD (Old/Overdue Works Sorted to Top, 10+ Expandable) -->
-        <div class="kanban-board grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" id="kanbanBoard">
-            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3 min-h-[60vh]" data-status="new">
-                <div class="flex justify-between items-center font-bold text-xs uppercase text-sky-400 pb-2 border-b border-slate-800">
-                    <span>New</span> <span id="cnt-new" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+        <!-- KANBAN BOARD WITH DRAG AND DROP -->
+        <div class="kanban-board grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5" id="kanbanBoard">
+            <div class="bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 min-h-[55vh] transition" data-status="new" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'new')">
+                <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-sky-400 pb-2 border-b border-slate-800/80">
+                    <span>New</span> <span id="cnt-new" class="bg-slate-800 text-sky-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
                 </div>
-                <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-new"></div>
+                <div class="kanban-cards flex flex-col gap-2 flex-1" id="col-new"></div>
                 <div id="expand-new"></div>
             </div>
-            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3 min-h-[60vh]" data-status="in-progress">
-                <div class="flex justify-between items-center font-bold text-xs uppercase text-amber-400 pb-2 border-b border-slate-800">
-                    <span>In Progress</span> <span id="cnt-in-progress" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            <div class="bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 min-h-[55vh] transition" data-status="in-progress" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'in-progress')">
+                <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-amber-400 pb-2 border-b border-slate-800/80">
+                    <span>In Progress</span> <span id="cnt-in-progress" class="bg-slate-800 text-amber-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
                 </div>
-                <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-in-progress"></div>
+                <div class="kanban-cards flex flex-col gap-2 flex-1" id="col-in-progress"></div>
                 <div id="expand-in-progress"></div>
             </div>
-            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3 min-h-[60vh]" data-status="pending">
-                <div class="flex justify-between items-center font-bold text-xs uppercase text-indigo-400 pb-2 border-b border-slate-800">
-                    <span>Pending</span> <span id="cnt-pending" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            <div class="bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 min-h-[55vh] transition" data-status="pending" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'pending')">
+                <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-indigo-400 pb-2 border-b border-slate-800/80">
+                    <span>Pending</span> <span id="cnt-pending" class="bg-slate-800 text-indigo-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
                 </div>
-                <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-pending"></div>
+                <div class="kanban-cards flex flex-col gap-2 flex-1" id="col-pending"></div>
                 <div id="expand-pending"></div>
             </div>
-            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-3 min-h-[60vh]" data-status="completed">
-                <div class="flex justify-between items-center font-bold text-xs uppercase text-emerald-400 pb-2 border-b border-slate-800">
-                    <span>Completed</span> <span id="cnt-completed" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0</span>
+            <div class="bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 min-h-[55vh] transition" data-status="completed" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'completed')">
+                <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-emerald-400 pb-2 border-b border-slate-800/80">
+                    <span>Completed</span> <span id="cnt-completed" class="bg-slate-800 text-emerald-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
                 </div>
-                <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-completed"></div>
+                <div class="kanban-cards flex flex-col gap-2 flex-1" id="col-completed"></div>
                 <div id="expand-completed"></div>
             </div>
         </div>
@@ -197,37 +201,39 @@
 
     <!-- TASK DRAWER -->
     <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex justify-end hidden" id="taskDrawer" onclick="closeDrawer(event)">
-        <div class="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full p-6 flex flex-col shadow-2xl overflow-y-auto animate-fade-in" onclick="event.stopPropagation()">
-            <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
-            <div class="flex justify-between items-start mb-4">
-                <input type="text" id="dTitleInput" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none" placeholder="Task Title">
-                <button onclick="document.getElementById('taskDrawer').style.display='none'" class="text-slate-400 hover:text-white text-xl ml-2 font-bold">✕</button>
+        <div class="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full p-5 flex flex-col shadow-2xl overflow-y-auto animate-fade-in" onclick="event.stopPropagation()">
+            <div class="w-8 h-1 bg-slate-700 rounded-full mx-auto mb-3"></div>
+            <div class="flex justify-between items-start mb-3">
+                <input type="text" id="dTitleInput" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[12px] font-extrabold text-white focus:outline-none" placeholder="Task Title">
+                <button onclick="document.getElementById('taskDrawer').style.display='none'" class="text-slate-400 hover:text-white text-base ml-2 font-bold px-1.5">✕</button>
             </div>
-            <div class="mb-3">
-                <select id="dAssigneeInput" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none admin-only"></select>
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <select id="dCategoryInput" class="bg-slate-950 border border-slate-700/80 rounded-xl px-2.5 py-2 text-[11px] font-bold text-slate-200 focus:outline-none">
+                    <option value="General">General</option>
+                    <option value="Modular">Modular</option>
+                    <option value="Showroom">Showroom</option>
+                    <option value="Factory">Factory</option>
+                    <option value="Dispatch">Dispatch</option>
+                </select>
+                <select id="dAssigneeInput" class="bg-slate-950 border border-slate-700/80 rounded-xl px-2.5 py-2 text-[11px] font-bold text-slate-200 focus:outline-none"></select>
             </div>
-            <p id="dMeta" class="text-[11px] text-slate-400 mb-4 font-semibold"></p>
-            <div id="dHistory" class="flex-1 overflow-y-auto space-y-2 mb-4 pr-1"></div>
-            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                <div class="flex gap-2">
-                    <textarea id="dNoteInput" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 resize-none focus:outline-none" style="height:60px;" placeholder="Mandatory update note..."></textarea>
-                    <button id="recordAudioBtn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl w-12 flex items-center justify-center text-lg text-slate-200 transition" onclick="toggleAudioRecording()" title="Record voice note">🎤</button>
-                </div>
+            <p id="dMeta" class="text-[10px] font-bold text-slate-400 mb-3"></p>
+            <div id="dHistory" class="flex-1 overflow-y-auto space-y-1.5 mb-3 pr-1"></div>
+            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-2.5">
+                <textarea id="dNoteInput" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-2.5 text-[11px] font-semibold text-slate-200 resize-none focus:outline-none placeholder-slate-500" style="height:55px;" placeholder="Mandatory update note..."></textarea>
                 <div class="space-y-2">
-                    <select id="dStatusInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none">
+                    <select id="dStatusInput" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 focus:outline-none">
                         <option value="new">New</option>
                         <option value="in-progress">In Progress</option>
                         <option value="pending">Pending</option>
                         <option value="completed">Completed</option>
                     </select>
-                    
-                    <!-- Working Hours Hourly Selector Dropdown -->
                     <div class="space-y-1">
-                        <label class="block text-[10px] uppercase font-bold text-slate-400">Deadline (Working Hours - 9 AM to 9 PM)</label>
-                        <select id="dDateInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none font-bold text-amber-400"></select>
+                        <label class="block text-[9px] uppercase font-extrabold tracking-wider text-slate-400">Deadline (Working Hours - 9 AM to 9 PM)</label>
+                        <select id="dDateInput" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-amber-400 focus:outline-none"></select>
                     </div>
                 </div>
-                <button id="dSaveBtn" onclick="saveTaskUpdate()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition">Save Updates & Notes</button>
+                <button onclick="saveTaskUpdate()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-[11px] shadow transition">Save Updates & Notes</button>
                 <div id="deleteTaskArea"></div>
             </div>
         </div>
@@ -235,61 +241,70 @@
 
     <!-- ACTIVITY LOG MODAL -->
     <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 hidden" id="activityModal" onclick="toggleActivityModal(false)">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 animate-fade-in" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center gap-2"><span>📡</span> Real-Time Activity Feed</h3>
-                <button onclick="toggleActivityModal(false)" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+        <div class="bg-slate-900 border border-slate-800/80 rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-3.5 animate-fade-in" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-2"><span>📡</span> Real-Time Activity Feed</h3>
+                <button onclick="toggleActivityModal(false)" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
             </div>
-            <div id="activityModalListUI" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1 text-xs"></div>
+            <div id="activityModalListUI" class="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1 text-[11px]"></div>
         </div>
     </div>
 
     <!-- ARCHIVE / TRASH MODAL -->
     <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 hidden" id="archiveModal" onclick="toggleArchiveModal(false)">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-4 animate-fade-in" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-trash-can text-rose-400"></i> Task Archive & Trash Bin</h3>
-                <button onclick="toggleArchiveModal(false)" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+        <div class="bg-slate-900 border border-slate-800/80 rounded-2xl w-full max-w-xl p-5 shadow-2xl space-y-3.5 animate-fade-in" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-2"><i class="fa-solid fa-trash-can text-rose-400 text-xs"></i> Task Archive & Trash Bin</h3>
+                <button onclick="toggleArchiveModal(false)" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
             </div>
-            <div id="archiveListUI" class="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1 text-xs"></div>
+            <div id="archiveListUI" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1 text-[11px]"></div>
         </div>
     </div>
 
     <!-- DM MODAL -->
     <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 hidden" id="msgModal" onclick="toggleMsgModal(false)">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl flex flex-col h-[75vh] animate-fade-in" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3">
-                <h3 class="text-base font-bold text-white"><i class="fa-solid fa-comments text-amber-400 mr-2"></i> Direct Messages</h3>
-                <button onclick="toggleMsgModal(false)" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+        <div class="bg-slate-900 border border-slate-800/80 rounded-2xl w-full max-w-lg p-5 shadow-2xl flex flex-col h-[70vh] animate-fade-in" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-2.5">
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-white"><i class="fa-solid fa-comments text-amber-400 mr-1.5 text-xs"></i> Direct Messages</h3>
+                <button onclick="toggleMsgModal(false)" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
             </div>
-            <select id="chatUserSelect" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 font-bold mb-3 focus:outline-none" onchange="loadActiveChat()"></select>
-            <div id="msgListUI" class="flex-1 overflow-y-auto space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800 mb-3 text-xs"></div>
+            <select id="chatUserSelect" class="bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 mb-2.5 focus:outline-none" onchange="loadActiveChat()"></select>
+            <div id="msgListUI" class="flex-1 overflow-y-auto space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800/80 mb-2.5 text-[11px]"></div>
             <div class="flex gap-2">
-                <input type="text" id="newMsgText" placeholder="Type a message..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none">
-                <button onclick="sendPrivateMessage()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition">Send</button>
+                <input type="text" id="newMsgText" placeholder="Type a message..." class="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] font-semibold text-slate-200 focus:outline-none">
+                <button onclick="sendPrivateMessage()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2 rounded-xl text-[11px] transition">Send</button>
             </div>
         </div>
     </div>
 
     <!-- STAFF SETTINGS MODAL -->
     <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 hidden" id="adminModal" onclick="toggleAdminModal(false)">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-4 animate-fade-in" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white"><i class="fa-solid fa-gear text-slate-400 mr-2"></i> Staff Roster Settings</h3>
-                <button onclick="toggleAdminModal(false)" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+        <div class="bg-slate-900 border border-slate-800/80 rounded-2xl w-full max-w-xl p-5 shadow-2xl space-y-3.5 animate-fade-in" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-white"><i class="fa-solid fa-gear text-slate-400 mr-1.5 text-xs"></i> Settings & Staff Roster</h3>
+                <button onclick="toggleAdminModal(false)" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
             </div>
 
-            <div class="space-y-3">
-                <div class="flex gap-2">
-                    <input type="text" id="newStaffName" placeholder="Staff Name" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none">
-                    <select id="newStaffRole" class="w-28 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none">
-                        <option value="staff">Staff</option>
-                        <option value="admin">Admin</option>
-                    </select>
+            <div class="space-y-3.5">
+                <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-2">
+                    <p class="text-[11px] font-extrabold text-sky-400">System Controls & Works Reset</p>
+                    <p class="text-[10px] font-semibold text-slate-400">Allowed for all team members to clear or reset completed works as needed.</p>
+                    <button onclick="resetAllWorks()" class="bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 border border-rose-500/30 text-[11px] font-bold px-3 py-2 rounded-xl w-full transition">Reset / Clear All Completed Works</button>
                 </div>
-                <input type="password" id="newStaffPass" placeholder="Password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none">
-                <button onclick="addStaffMember()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-xl text-xs">Add Staff Member</button>
-                <div id="staffListUI" class="max-h-48 overflow-y-auto space-y-1.5 pr-1"></div>
+
+                <div class="space-y-2.5 admin-only">
+                    <p class="text-[11px] font-extrabold text-slate-300">Staff Roster Management</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="newStaffName" placeholder="Staff Name" class="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] font-semibold text-slate-200 focus:outline-none">
+                        <select id="newStaffRole" class="w-28 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 focus:outline-none">
+                            <option value="staff">Staff</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <input type="password" id="newStaffPass" placeholder="Password" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] font-semibold text-slate-200 focus:outline-none">
+                    <button onclick="addStaffMember()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-xl text-[11px]">Add Staff Member</button>
+                </div>
+                <div id="staffListUI" class="max-h-44 overflow-y-auto space-y-1.5 pr-1 text-[11px]"></div>
             </div>
         </div>
     </div>
@@ -373,9 +388,6 @@
         let currentOpenTaskId = null;
         let activeChatPartner = '';
         let expandedColumns = { new: false, 'in-progress': false, pending: false, completed: false };
-        let mediaRecorder;
-        let audioChunks = [];
-        let isRecording = false;
 
         function getNowISO() {
             const now = new Date();
@@ -464,8 +476,8 @@
         function checkNotificationForce() {
             if (window.Notification && Notification.permission !== 'granted') {
                 Notification.requestPermission().then(permission => {
-                    if (permission !== 'granted') {
-                        console.log('Notifications not granted yet.');
+                    if (permission === 'granted') {
+                        console.log('Notifications permitted.');
                     }
                 });
             }
@@ -485,11 +497,13 @@
             activeFilters.team = 'ALL';
 
             document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('welcomeMsg').innerText = `Welcome, ${currentUser.username} (${currentUser.role.toUpperCase()})`;
+            document.getElementById('welcomeMsg').innerText = `Welcome, ${currentUser.username}`;
             
             if (currentUser.role === 'admin') {
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('admin-only'));
             }
+
+            checkNotificationForce();
 
             db.ref('users').on('value', snap => {
                 allUsers = snap.val() || {};
@@ -524,234 +538,374 @@
 
         function renderTeamFilterBar() {
             const bar = document.getElementById('teamFilterBar');
-            bar.innerHTML = `<button class="px-3 py-1 rounded-xl text-xs font-bold border transition ${activeFilters.team === 'ALL' ? 'bg-sky-600 text-white border-sky-500' : 'bg-slate-950 text-slate-300 border-slate-700'}" onclick="setTeamFilter('ALL')">All Team</button>`;
-            Object.keys(allUsers).forEach(uname => {
-                const active = activeFilters.team === uname;
-                bar.innerHTML += `<button class="px-3 py-1 rounded-xl text-xs font-bold border transition ${active ? 'bg-sky-600 text-white border-sky-500' : 'bg-slate-950 text-slate-300 border-slate-700'}" onclick="setTeamFilter('${uname}')">${uname}</button>`;
-            });
-        }
+            const select = document.getElementById('tUser');
+            const drawerSelect = document.getElementById('dAssigneeInput');
+            const chatSelect = document.getElementById('chatUserSelect');
 
-        function setTeamFilter(uname) {
-            activeFilters.team = uname;
-            renderTeamFilterBar();
-            renderTasks();
-        }
+            let staffNames = Object.keys(allUsers);
+            if (staffNames.length === 0) {
+                staffNames = ['Alex Rivera', 'Chetan Prajapati'];
+            }
 
-        function renderStaffSettingsList() {
-            const el = document.getElementById('staffListUI');
-            if (!el) return;
-            el.innerHTML = '';
-            Object.entries(allUsers).forEach(([uname, data]) => {
-                el.innerHTML += `
-                    <div class="flex justify-between items-center bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
-                        <span><strong>${uname}</strong> (${data.role || 'staff'})</span>
-                        <div class="flex items-center gap-3">
-                            <button onclick="resetStaffWorks('${uname}')" class="text-amber-400 font-bold hover:text-amber-300">Reset Works</button>
-                            ${uname !== currentUser.username ? `<button onclick="deleteStaff('${uname}')" class="text-rose-400 font-bold hover:text-rose-300">Remove</button>` : ''}
-                        </div>
-                    </div>`;
+            bar.innerHTML = `<button onclick="filterTeam('ALL')" class="px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase transition ${activeFilters.team === 'ALL' ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'}">All Team</button>`;
+            staffNames.forEach(name => {
+                const isActive = activeFilters.team === name;
+                bar.innerHTML += `<button onclick="filterTeam('${name}')" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition ${isActive ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'}">${name}</button>`;
             });
-            const tUser = document.getElementById('tUser');
-            const dAssign = document.getElementById('dAssigneeInput');
-            if (tUser && dAssign) {
-                tUser.innerHTML = ''; dAssign.innerHTML = '';
-                Object.keys(allUsers).forEach(uname => {
-                    tUser.innerHTML += `<option value="${uname}">${uname}</option>`;
-                    dAssign.innerHTML += `<option value="${uname}">${uname}</option>`;
-                });
-                tUser.value = currentUser.username;
+
+            select.innerHTML = staffNames.map(n => `<option value="${n}">${n}</option>`).join('');
+            if (drawerSelect) drawerSelect.innerHTML = staffNames.map(n => `<option value="${n}">${n}</option>`).join('');
+            if (chatSelect) {
+                const others = staffNames.filter(n => n !== currentUser.username);
+                chatSelect.innerHTML = others.map(n => `<option value="${n}">Chat with ${n}</option>`).join('');
+                if (!activeChatPartner && others.length > 0) activeChatPartner = others[0];
+                chatSelect.value = activeChatPartner;
+                loadActiveChat();
             }
         }
 
-        function resetStaffWorks(uname) {
-            if (!confirm(`Are you sure you want to reset and archive all works assigned to ${uname}?`)) return;
-            Object.entries(currentTasksCache).forEach(([id, t]) => {
-                if (t.assignee === uname) {
-                    db.ref('archive/' + id).set(t);
-                    db.ref('tasks/' + id).remove();
-                }
-            });
-            logActivity('Staff Works Reset', `Reset and archived all works assigned to ${uname}`);
-            alert(`All works for ${uname} have been reset.`);
-        }
-
-        function toggleExpandColumn(st) {
-            expandedColumns[st] = !expandedColumns[st];
+        function filterTeam(name) {
+            activeFilters.team = name;
+            renderTeamFilterBar();
             renderTasks();
-        }
-
-        function renderTasks() {
-            ['new', 'in-progress', 'pending', 'completed'].forEach(st => {
-                document.getElementById(`col-${st}`).innerHTML = '';
-                document.getElementById(`cnt-${st}`).innerText = '0';
-                document.getElementById(`expand-${st}`).innerHTML = '';
-            });
-
-            const searchQ = document.getElementById('globalSearchInput')?.value.toLowerCase() || '';
-            let groupedTasks = { new: [], 'in-progress': [], pending: [], completed: [] };
-
-            Object.entries(currentTasksCache).forEach(([id, t]) => {
-                if (activeFilters.team !== 'ALL' && t.assignee !== activeFilters.team) return;
-                if (searchQ && !t.title.toLowerCase().includes(searchQ) && !t.assignee.toLowerCase().includes(searchQ)) return;
-                groupedTasks[t.status].push({ id, ...t });
-            });
-
-            // Sort tasks by due date ascending (oldest & overdue works bubble up to the top)
-            Object.keys(groupedTasks).forEach(st => {
-                groupedTasks[st].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                const totalCount = groupedTasks[st].length;
-                document.getElementById(`cnt-${st}`).innerText = totalCount;
-
-                const col = document.getElementById(`col-${st}`);
-                const isExpanded = expandedColumns[st];
-                const displayTasks = isExpanded ? groupedTasks[st] : groupedTasks[st].slice(0, 10);
-
-                displayTasks.forEach(t => {
-                    const isOverdue = new Date(t.dueDate) < new Date() && t.status !== 'completed';
-                    const card = document.createElement('div');
-                    card.className = `task-card card-${t.status} ${isOverdue ? 'is-overdue' : ''} bg-slate-950 border border-slate-800 rounded-xl p-3.5 cursor-pointer shadow transition hover:border-sky-500`;
-                    card.onclick = () => openTaskDrawer(t.id);
-                    
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800">Reminder</span>
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 uppercase">Active</span>
-                        </div>
-                        <div class="card-title text-xs font-bold text-white mb-1.5">${t.title}</div>
-                        <div class="flex justify-between items-center text-[10px] text-slate-400 pt-2 border-t border-slate-900">
-                            <span>👤 ${t.assignee}</span>
-                            <span class="font-mono text-amber-400 font-bold">⏰ ${formatHourDisplay(t.dueDate)}</span>
-                        </div>
-                    `;
-                    col.appendChild(card);
-                });
-
-                // Show expand/collapse button if items exceed 10
-                const expandArea = document.getElementById(`expand-${st}`);
-                if (totalCount > 10) {
-                    if (!isExpanded) {
-                        expandArea.innerHTML = `<button onclick="toggleExpandColumn('${st}')" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-xs py-2 rounded-xl transition">+ Show ${totalCount - 10} More Works</button>`;
-                    } else {
-                        expandArea.innerHTML = `<button onclick="toggleExpandColumn('${st}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-xs py-2 rounded-xl transition">Show Less</button>`;
-                    }
-                }
-            });
         }
 
         function createTask(e) {
             e.preventDefault();
             const title = document.getElementById('tTitle').value.trim();
             const assignee = document.getElementById('tUser').value;
-
             if (!title) return;
 
-            const newTask = {
-                title, 
-                assignee, 
-                dueDate: getNowISO(),
+            const newRef = db.ref('tasks').push();
+            const taskData = {
+                id: newRef.key,
+                title: title,
+                category: 'General',
+                assignee: assignee,
+                creator: currentUser.username,
                 status: 'new',
-                createdAt: new Date().toISOString(),
-                history: [{ time: new Date().toLocaleString(), text: `Task created by ${currentUser.username}` }]
+                deadline: getNowISO(),
+                createdAt: Date.now(),
+                history: [{ user: currentUser.username, text: `Created work: "${title}"`, time: Date.now() }]
             };
-
-            db.ref('tasks').push(newTask);
+            newRef.set(taskData);
+            logActivity(`Assigned "${title}" to ${assignee}`);
             document.getElementById('tTitle').value = '';
-            logActivity('Task Created', `Created work "${title}" assigned to ${assignee}`);
-
-            if (Notification && Notification.permission === 'granted') {
-                new Notification('URBAN CASA: New Work Assigned', { body: `Work: "${title}" assigned by ${currentUser.username}` });
-            }
         }
 
-        function openTaskDrawer(id) {
-            currentOpenTaskId = id;
-            const t = currentTasksCache[id];
-            if (!t) return;
+        function renderTasks() {
+            const columns = { new: [], 'in-progress': [], pending: [], completed: [] };
+            const counts = { new: 0, 'in-progress': 0, pending: 0, completed: 0 };
+            const globalSearch = document.getElementById('globalSearchInput').value.toLowerCase();
 
-            document.getElementById('dTitleInput').value = t.title;
-            document.getElementById('dAssigneeInput').value = t.assignee || '';
-            document.getElementById('dStatusInput').value = t.status || 'new';
-            document.getElementById('dNoteInput').value = '';
-            populateWorkingHoursSelect(t.dueDate || getNowISO());
-            document.getElementById('dMeta').innerText = `Created: ${new Date(t.createdAt).toLocaleString()}`;
+            Object.values(currentTasksCache).forEach(task => {
+                if (activeFilters.team !== 'ALL' && task.assignee !== activeFilters.team) return;
+                if (globalSearch && !task.title.toLowerCase().includes(globalSearch) && !task.assignee.toLowerCase().includes(globalSearch) && !(task.category && task.category.toLowerCase().includes(globalSearch))) return;
 
-            const hist = document.getElementById('dHistory');
-            hist.innerHTML = '';
-            (t.history || []).forEach(h => {
-                hist.innerHTML += `<div class="history-item bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs mb-2"><strong>${h.time}</strong>: ${h.text}${h.audio ? `<br><audio controls src="${h.audio}" class="mt-2 w-full"></audio>` : ''}</div>`;
+                counts[task.status]++;
+                columns[task.status].push(task);
             });
 
-            const delArea = document.getElementById('deleteTaskArea');
-            if (currentUser.role === 'admin' || t.assignee === currentUser.username) {
-                delArea.innerHTML = `<button onclick="deleteTask('${id}')" class="w-full bg-rose-950/40 hover:bg-rose-900/50 text-rose-400 border border-rose-900/50 font-bold py-2 rounded-xl text-xs mt-2 transition">Archive / Delete Work</button>`;
-            } else { delArea.innerHTML = ''; }
+            Object.keys(columns).forEach(status => {
+                const list = columns[status];
+                list.sort((a, b) => {
+                    const aOverdue = a.deadline && new Date(a.deadline) < new Date() && a.status !== 'completed';
+                    const bOverdue = b.deadline && new Date(b.deadline) < new Date() && b.status !== 'completed';
+                    if (aOverdue && !bOverdue) return -1;
+                    if (!aOverdue && bOverdue) return 1;
+                    return (a.createdAt || 0) - (b.createdAt || 0);
+                });
+
+                document.getElementById(`cnt-${status}`).innerText = list.length;
+                const container = document.getElementById(`col-${status}`);
+                const expandContainer = document.getElementById(`expand-${status}`);
+                container.innerHTML = '';
+                expandContainer.innerHTML = '';
+
+                const limit = expandedColumns[status] ? list.length : Math.min(list.length, 10);
+                const visibleTasks = list.slice(0, limit);
+
+                visibleTasks.forEach(task => {
+                    container.appendChild(createTaskCard(task));
+                });
+
+                if (list.length > 10 && !expandedColumns[status]) {
+                    expandContainer.innerHTML = `<button onclick="toggleExpandColumn('${status}')" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show All (${list.length})</button>`;
+                } else if (expandedColumns[status] && list.length > 10) {
+                    expandContainer.innerHTML = `<button onclick="toggleExpandColumn('${status}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show Less</button>`;
+                }
+            });
+        }
+
+        function toggleExpandColumn(status) {
+            expandedColumns[status] = !expandedColumns[status];
+            renderTasks();
+        }
+
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'completed';
+            card.className = `bg-slate-950/90 border border-slate-800 hover:border-sky-500/60 rounded-xl p-3 flex flex-col gap-2 shadow-sm cursor-pointer transition relative group ${isOverdue ? 'is-overdue' : ''}`;
+            card.setAttribute('draggable', 'true');
+            card.id = `card-${task.id}`;
+
+            card.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', task.id);
+                card.classList.add('dragging');
+            });
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
+
+            card.onclick = () => openTaskDrawer(task.id);
+
+            const categoryBadge = task.category ? `<span class="bg-slate-900 text-sky-300 border border-slate-800/80 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold">${task.category}</span>` : '';
+            const deadlineText = task.deadline ? formatHourDisplay(task.deadline) : '';
+            const deadlineBadge = deadlineText ? `<span class="text-[10px] font-semibold ${isOverdue ? 'text-rose-400 font-extrabold animate-pulse' : 'text-slate-400'}"><i class="fa-regular fa-clock mr-0.5 text-[9px]"></i>${deadlineText}</span>` : '';
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start gap-2">
+                    <h4 class="text-[11px] font-bold text-slate-100 leading-snug flex-1">${task.title}</h4>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <button onclick="event.stopPropagation(); archiveTask('${task.id}')" title="Archive Work" class="text-slate-400 hover:text-rose-400 p-1"><i class="fa-solid fa-box-archive text-[10px]"></i></button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center text-[10px] pt-1 border-t border-slate-900 mt-0.5">
+                    <span class="text-sky-400 font-extrabold flex items-center gap-1"><i class="fa-solid fa-user-tag text-[9px]"></i>${task.assignee}</span>
+                    <div class="flex items-center gap-1.5">
+                        ${categoryBadge}
+                        ${deadlineBadge}
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const col = e.currentTarget;
+            col.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            const col = e.currentTarget;
+            col.classList.remove('drag-over');
+        }
+
+        function handleDrop(e, newStatus) {
+            e.preventDefault();
+            const col = e.currentTarget;
+            col.classList.remove('drag-over');
+
+            const taskId = e.dataTransfer.getData('text/plain');
+            if (!taskId || !currentTasksCache[taskId]) return;
+
+            const task = currentTasksCache[taskId];
+            if (task.status === newStatus) return;
+
+            let history = task.history || [];
+            history.push({
+                user: currentUser.username,
+                text: `Moved status: ${task.status} → ${newStatus}`,
+                time: Date.now()
+            });
+
+            db.ref('tasks/' + taskId).update({
+                status: newStatus,
+                history: history
+            });
+
+            logActivity(`Moved "${task.title}" to ${newStatus} by ${currentUser.username}`);
+        }
+
+        function openTaskDrawer(taskId) {
+            currentOpenTaskId = taskId;
+            const task = currentTasksCache[taskId];
+            if (!task) return;
+
+            document.getElementById('dTitleInput').value = task.title;
+            document.getElementById('dCategoryInput').value = task.category || 'General';
+            const assigneeSelect = document.getElementById('dAssigneeInput');
+            if (assigneeSelect) assigneeSelect.value = task.assignee;
+            document.getElementById('dStatusInput').value = task.status;
+            populateWorkingHoursSelect(task.deadline);
+
+            document.getElementById('dMeta').innerText = `Assigned to ${task.assignee} • Created by ${task.creator || 'Admin'}`;
+
+            const historyList = document.getElementById('dHistory');
+            historyList.innerHTML = (task.history || []).map(h => `
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[10px]">
+                    <div class="flex justify-between font-extrabold text-sky-400 mb-0.5">
+                        <span>${h.user}</span>
+                        <span class="text-[8px] text-slate-500 font-bold">${new Date(h.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <p class="text-slate-300 font-semibold">${h.text}</p>
+                </div>
+            `).join('');
+
+            document.getElementById('deleteTaskArea').innerHTML = `<button onclick="deleteTaskPermanently('${task.id}')" class="w-full bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 border border-rose-500/30 font-extrabold py-2 rounded-xl text-[11px] transition mt-2">Delete Work Permanently</button>`;
 
             document.getElementById('taskDrawer').style.display = 'flex';
         }
 
+        function closeDrawer(e) {
+            if (e.target.id === 'taskDrawer') {
+                document.getElementById('taskDrawer').style.display = 'none';
+            }
+        }
+
         function saveTaskUpdate() {
             if (!currentOpenTaskId) return;
-            const t = currentTasksCache[currentOpenTaskId];
-            if (!t) return;
+            const task = currentTasksCache[currentOpenTaskId];
+            if (!task) return;
 
-            const note = document.getElementById('dNoteInput').value.trim();
             const newTitle = document.getElementById('dTitleInput').value.trim();
-            const newAssignee = document.getElementById('dAssigneeInput').value;
+            const newCategory = document.getElementById('dCategoryInput').value;
+            const assigneeSelect = document.getElementById('dAssigneeInput');
+            const newAssignee = assigneeSelect ? assigneeSelect.value : task.assignee;
             const newStatus = document.getElementById('dStatusInput').value;
-            const newDueDate = document.getElementById('dDateInput').value;
+            const newDeadline = document.getElementById('dDateInput').value;
+            const noteText = document.getElementById('dNoteInput').value.trim();
 
-            // Enforce update requirement (must enter a note or modify status/deadline/details)
-            if (!note && newTitle === t.title && newAssignee === t.assignee && newStatus === t.status && newDueDate === t.dueDate) {
-                alert('⚠️ Please enter an update note or change the deadline/status before saving so your progress is tracked!');
+            if (!noteText) {
+                alert('Please enter a mandatory update note before saving.');
                 return;
             }
 
-            const updates = {
-                title: newTitle,
+            let history = task.history || [];
+            history.push({
+                user: currentUser.username,
+                text: `${noteText} (Status: ${newStatus})`,
+                time: Date.now()
+            });
+
+            db.ref('tasks/' + currentOpenTaskId).update({
+                title: newTitle || task.title,
+                category: newCategory,
                 assignee: newAssignee,
                 status: newStatus,
-                dueDate: newDueDate
-            };
+                deadline: newDeadline,
+                history: history
+            });
 
-            let hist = t.history || [];
-            if (note) {
-                hist.unshift({ time: new Date().toLocaleString(), text: `${currentUser.username}: ${note}` });
-            } else {
-                hist.unshift({ time: new Date().toLocaleString(), text: `${currentUser.username} updated task status/deadline` });
-            }
-            updates.history = hist;
-
-            db.ref('tasks/' + currentOpenTaskId).update(updates);
+            logActivity(`Updated work "${newTitle || task.title}" -> ${newStatus} by ${currentUser.username}`);
             document.getElementById('dNoteInput').value = '';
             document.getElementById('taskDrawer').style.display = 'none';
-            logActivity('Task Updated', `Updated work "${updates.title}"`);
         }
 
-        function deleteTask(id) {
-            if (!confirm('Move work to archive?')) return;
-            const t = currentTasksCache[id];
-            db.ref('archive/' + id).set(t);
-            db.ref('tasks/' + id).remove();
-            document.getElementById('taskDrawer').style.display = 'none';
-            logActivity('Task Archived', `Archived work "${t.title}"`);
+        function archiveTask(taskId) {
+            const task = currentTasksCache[taskId];
+            if (!task) return;
+            db.ref('archive/' + taskId).set(task);
+            db.ref('tasks/' + taskId).remove();
+            logActivity(`Archived work "${task.title}"`);
         }
 
-        function logActivity(tag, text) {
-            db.ref('activityLogs').push({ time: new Date().toLocaleTimeString(), tag, text });
+        function deleteTaskPermanently(taskId) {
+            if (confirm('Are you sure you want to delete this work permanently?')) {
+                db.ref('tasks/' + taskId).remove();
+                db.ref('archive/' + taskId).remove();
+                document.getElementById('taskDrawer').style.display = 'none';
+                logActivity(`Deleted work permanently`);
+            }
+        }
+
+        function resetAllWorks() {
+            if (confirm('Are you sure you want to clear/reset all completed works?')) {
+                Object.values(currentTasksCache).forEach(t => {
+                    if (t.status === 'completed') {
+                        db.ref('tasks/' + t.id).remove();
+                    }
+                });
+                alert('All completed works have been cleared/reset.');
+                logActivity(`${currentUser.username} reset completed works.`);
+            }
+        }
+
+        // PDF EXPORT CLEAN CHECKLIST BY CATEGORY AND USER
+        function exportMinimalPDF() {
+            const element = document.createElement('div');
+            element.style.padding = '20px';
+            element.style.fontFamily = 'Inter, sans-serif';
+            element.style.color = '#0f172a';
+            element.style.background = '#ffffff';
+
+            let html = `
+                <div style="border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px;">
+                    <h2 style="font-size: 18px; font-weight: 800; color: #0284c7; margin: 0;">URBAN CASA | Operations Checklist</h2>
+                    <p style="font-size: 10px; color: #64748b; margin: 4px 0 0 0; font-weight: 600;">Generated on ${new Date().toLocaleDateString([], {month:'long', day:'numeric', year:'numeric'})} by ${currentUser.username}</p>
+                </div>
+            `;
+
+            const categories = ['General', 'Modular', 'Showroom', 'Factory', 'Dispatch'];
+            categories.forEach(cat => {
+                let catTasks = Object.values(currentTasksCache).filter(t => (t.category || 'General') === cat);
+                if (catTasks.length === 0) return;
+
+                html += `<div style="margin-bottom: 16px;">`;
+                html += `<h3 style="font-size: 12px; font-weight: 800; background: #f0f7ff; color: #0369a1; padding: 6px 10px; border-radius: 6px; margin: 0 0 8px 0; text-transform: uppercase;">Category: ${cat}</h3>`;
+                
+                let usersMap = {};
+                catTasks.forEach(t => {
+                    if (!usersMap[t.assignee]) usersMap[t.assignee] = [];
+                    usersMap[t.assignee].push(t);
+                });
+
+                Object.keys(usersMap).forEach(user => {
+                    html += `<div style="margin-left: 10px; margin-bottom: 8px;">`;
+                    html += `<p style="font-size: 11px; font-weight: 700; color: #334155; margin: 4px 0;">👤 ${user}</p>`;
+                    html += `<ul style="list-style: none; padding: 0; margin: 0;">`;
+                    usersMap[user].forEach(t => {
+                        let statusLabel = t.status.toUpperCase();
+                        let deadlineStr = t.deadline ? ` (${formatHourDisplay(t.deadline)})` : '';
+                        html += `
+                            <li style="font-size: 10px; padding: 4px 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="display: inline-block; width: 11px; height: 11px; border: 1.5px solid #0284c7; border-radius: 3px; background: #fff;"></span>
+                                    <span style="font-weight: 700; color: #1e293b;">${t.title}</span>
+                                    <span style="color: #64748b; font-size: 9px; font-weight: 600;">${deadlineStr}</span>
+                                </div>
+                                <span style="font-size: 8px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #475569;">${statusLabel}</span>
+                            </li>
+                        `;
+                    });
+                    html += `</ul></div>`;
+                });
+                html += `</div>`;
+            });
+
+            element.innerHTML = html;
+
+            const opt = {
+                margin:       10,
+                filename:     `UrbanCasa_Checklist_${new Date().toISOString().slice(0,10)}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(element).set(opt).save();
+        }
+
+        // LIVE ACTIVITY FEED
+        function logActivity(text) {
+            const ref = db.ref('activity').push();
+            ref.set({ text: text, time: Date.now() });
         }
 
         function toggleActivityModal(show) {
             const modal = document.getElementById('activityModal');
             modal.style.display = show ? 'flex' : 'none';
             if (show) {
-                db.ref('activityLogs').limitToLast(50).once('value', snap => {
-                    const list = document.getElementById('activityModalListUI');
-                    list.innerHTML = '';
-                    const logs = [];
-                    snap.forEach(ch => logs.unshift(ch.val()));
-                    logs.forEach(l => {
-                        list.innerHTML += `<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center text-xs"><div><span class="text-sky-400 font-bold">[${l.tag}]</span> ${l.text}</div><span class="text-slate-500 font-mono text-[10px]">${l.time}</span></div>`;
-                    });
+                db.ref('activity').limitToLast(30).once('value', snap => {
+                    const data = snap.val() || {};
+                    const list = Object.values(data).reverse();
+                    document.getElementById('activityModalListUI').innerHTML = list.map(a => `
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[10px] flex justify-between items-center font-semibold">
+                            <span class="text-slate-200">${a.text}</span>
+                            <span class="text-[8px] text-slate-500 font-bold">${new Date(a.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    `).join('');
                 });
             }
         }
@@ -760,156 +914,114 @@
             const modal = document.getElementById('archiveModal');
             modal.style.display = show ? 'flex' : 'none';
             if (show) {
-                const list = document.getElementById('archiveListUI');
-                list.innerHTML = '';
-                Object.entries(archivedTasksCache).forEach(([id, t]) => {
-                    list.innerHTML += `<div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs"><div><strong>${t.title}</strong><br><span class="text-slate-400">Assigned: ${t.assignee}</span></div><div class="flex gap-2"><button onclick="restoreTask('${id}')" class="text-sky-400 font-bold hover:text-sky-300">Restore</button><button onclick="purgeTask('${id}')" class="text-rose-400 font-bold hover:text-rose-300">Purge</button></div></div>`;
-                });
+                const listUI = document.getElementById('archiveListUI');
+                listUI.innerHTML = Object.values(archivedTasksCache).map(t => `
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 flex justify-between items-center text-[11px]">
+                        <div>
+                            <p class="font-extrabold text-slate-200">${t.title}</p>
+                            <p class="text-[9px] font-bold text-slate-400 mt-0.5">Assigned: ${t.assignee} • Category: ${t.category || 'General'}</p>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button onclick="restoreTask('${t.id}')" class="bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 px-2.5 py-1 rounded-lg text-[10px] font-bold">Restore</button>
+                            <button onclick="deleteTaskPermanently('${t.id}')" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 px-2.5 py-1 rounded-lg text-[10px] font-bold">Delete</button>
+                        </div>
+                    </div>
+                `).join('') || '<p class="text-slate-500 text-center py-4 font-bold text-[11px]">No archived works.</p>';
             }
         }
 
-        function restoreTask(id) {
-            const t = archivedTasksCache[id];
-            db.ref('tasks/' + id).set(t);
-            db.ref('archive/' + id).remove();
+        function restoreTask(taskId) {
+            const task = archivedTasksCache[taskId];
+            if (!task) return;
+            db.ref('tasks/' + taskId).set(task);
+            db.ref('archive/' + taskId).remove();
             toggleArchiveModal(false);
+            logActivity(`Restored work "${task.title}"`);
         }
 
-        function purgeTask(id) {
-            db.ref('archive/' + id).remove();
-            toggleArchiveModal(false);
-        }
-
+        // DIRECT MESSAGING
         function toggleMsgModal(show) {
-            document.getElementById('msgModal').style.display = show ? 'flex' : 'none';
-            if (show) {
-                const sel = document.getElementById('chatUserSelect');
-                sel.innerHTML = '';
-                Object.keys(allUsers).forEach(u => {
-                    if (u !== currentUser.username) sel.innerHTML += `<option value="${u}">${u}</option>`;
-                });
-                loadActiveChat();
-            }
+            const modal = document.getElementById('msgModal');
+            modal.style.display = show ? 'flex' : 'none';
+            if (show) loadActiveChat();
         }
 
         function loadActiveChat() {
             activeChatPartner = document.getElementById('chatUserSelect').value;
             db.ref('messages').on('value', snap => {
-                const list = document.getElementById('msgListUI');
-                list.innerHTML = '';
                 const msgs = snap.val() || {};
-                Object.entries(msgs).forEach(([k, m]) => {
-                    if ((m.from === currentUser.username && m.to === activeChatPartner) || (m.from === activeChatPartner && m.to === currentUser.username)) {
-                        list.innerHTML += `<div class="p-2 rounded-xl bg-slate-900 border border-slate-800"><strong>${m.from}</strong>: ${m.text}<div class="text-[9px] text-slate-500 font-mono">${m.time}</div></div>`;
-                        if (m.to === currentUser.username && !m.read) db.ref(`messages/${k}/read`).set(true);
+                const listUI = document.getElementById('msgListUI');
+                let html = '';
+                Object.values(msgs).forEach(m => {
+                    const isBetween = (m.from === currentUser.username && m.to === activeChatPartner) || (m.from === activeChatPartner && m.to === currentUser.username);
+                    if (isBetween) {
+                        const isMe = m.from === currentUser.username;
+                        if (!isMe && !m.read) {
+                            db.ref(`messages/${m.id}`).update({ read: true });
+                        }
+                        html += `
+                            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                                <div class="max-w-[75%] p-2.5 rounded-xl text-[11px] font-semibold ${isMe ? 'bg-sky-600 text-white rounded-br-none shadow-sm' : 'bg-slate-900 border border-slate-700/80 text-slate-200 rounded-bl-none'}">
+                                    <p>${m.text}</p>
+                                </div>
+                                <span class="text-[8px] font-bold text-slate-500 mt-0.5">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        `;
                     }
                 });
+                listUI.innerHTML = html || '<p class="text-slate-500 text-center py-4 font-bold text-[11px]">No messages yet with ' + activeChatPartner + '</p>';
+                listUI.scrollTop = listUI.scrollHeight;
             });
         }
 
         function sendPrivateMessage() {
             const text = document.getElementById('newMsgText').value.trim();
             if (!text || !activeChatPartner) return;
-            db.ref('messages').push({
+            const ref = db.ref('messages').push();
+            const msgData = {
+                id: ref.key,
                 from: currentUser.username,
                 to: activeChatPartner,
-                text,
-                time: new Date().toLocaleTimeString(),
+                text: text,
+                time: Date.now(),
                 read: false
-            });
+            };
+            ref.set(msgData);
             document.getElementById('newMsgText').value = '';
         }
 
+        // STAFF SETTINGS
         function toggleAdminModal(show) {
             document.getElementById('adminModal').style.display = show ? 'flex' : 'none';
         }
 
+        function renderStaffSettingsList() {
+            const listUI = document.getElementById('staffListUI');
+            listUI.innerHTML = Object.entries(allUsers).map(([name, data]) => `
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 flex justify-between items-center text-[11px]">
+                    <div>
+                        <span class="font-extrabold text-slate-200">${name}</span>
+                        <span class="text-[9px] font-bold text-sky-400 ml-1.5 uppercase">(${data.role || 'staff'})</span>
+                    </div>
+                    ${currentUser.role === 'admin' && name !== 'Alex Rivera' ? `<button onclick="removeStaffMember('${name}')" class="text-rose-400 hover:text-rose-300 font-bold text-[10px]">Remove</button>` : ''}
+                </div>
+            `).join('');
+        }
+
         function addStaffMember() {
             const name = document.getElementById('newStaffName').value.trim();
-            const pass = document.getElementById('newStaffPass').value.trim();
             const role = document.getElementById('newStaffRole').value;
-            if (!name || !pass) return;
-            db.ref('users/' + name).set({ pass, role });
+            const pass = document.getElementById('newStaffPass').value.trim();
+            if (!name || !pass) { alert('Enter staff name and password.'); return; }
+            db.ref('users/' + name).set({ pass: pass, role: role });
             document.getElementById('newStaffName').value = '';
             document.getElementById('newStaffPass').value = '';
+            alert('Staff member added successfully.');
         }
 
-        function deleteStaff(uname) {
-            db.ref('users/' + uname).remove();
-        }
-
-        function filterTasksLive() { renderTasks(); }
-
-        function exportMinimalPDF() {
-            const container = document.createElement('div');
-            container.style.cssText = 'background: white; color: black; padding: 25px; font-family: sans-serif; font-size: 13px;';
-            container.innerHTML = `<h2 style="font-size: 18px; font-weight: bold; margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 8px;">URBAN CASA - Staff Work Checklist</h2><p style="font-size: 11px; margin-bottom: 20px; color: #555;">Generated on ${new Date().toLocaleString()}</p>`;
-
-            let staffMap = {};
-            Object.values(currentTasksCache).forEach(t => {
-                if (t.status !== 'completed') {
-                    if (!staffMap[t.assignee]) staffMap[t.assignee] = [];
-                    staffMap[t.assignee].push(t);
-                }
-            });
-
-            if (Object.keys(staffMap).length === 0) {
-                container.innerHTML += `<p>No active works found.</p>`;
-            } else {
-                Object.entries(staffMap).forEach(([staff, tasks]) => {
-                    container.innerHTML += `<h3 style="margin-top: 15px; font-weight: bold; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #ccc; padding-bottom: 3px;">Staff: ${staff}</h3>`;
-                    let ul = document.createElement('ul');
-                    ul.style.cssText = 'list-style: none; padding-left: 0; margin: 8px 0 15px 0;';
-                    tasks.forEach(t => {
-                        let li = document.createElement('li');
-                        li.style.cssText = 'margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;';
-                        li.innerHTML = `<span style="font-family: monospace; font-size: 15px; line-height: 1;">[  ]</span> <span><strong>${t.title}</strong><br><span style="font-size: 11px; color: #555;">Status: ${t.status.toUpperCase()} | Due: ${formatHourDisplay(t.dueDate)}</span></span>`;
-                        ul.appendChild(li);
-                    });
-                    container.appendChild(ul);
-                });
-            }
-
-            document.body.appendChild(container);
-            const opt = {
-                margin: 10,
-                filename: 'UrbanCasa_Staff_Checklist.pdf',
-                image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().from(container).set(opt).save().then(() => {
-                document.body.removeChild(container);
-            });
-        }
-
-        let audioRecorder;
-        function toggleAudioRecording() {
-            const btn = document.getElementById('recordAudioBtn');
-            if (!isRecording) {
-                navigator.mediaDevices?.getUserMedia({ audio: true }).then(stream => {
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                    mediaRecorder.onstop = () => {
-                        const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const audioUrl = URL.createObjectURL(blob);
-                        if (currentOpenTaskId) {
-                            const t = currentTasksCache[currentOpenTaskId];
-                            let hist = t.history || [];
-                            hist.unshift({ time: new Date().toLocaleString(), text: `${currentUser.username} recorded voice note`, audio: audioUrl });
-                            db.ref(`tasks/${currentOpenTaskId}/history`).set(hist);
-                            openTaskDrawer(currentOpenTaskId);
-                        }
-                    };
-                    mediaRecorder.start();
-                    isRecording = true;
-                    btn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
-                }).catch(() => alert('Microphone access denied or unavailable.'));
-            } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                btn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
+        function removeStaffMember(name) {
+            if (confirm(`Remove staff member ${name}?`)) {
+                db.ref('users/' + name).remove();
             }
         }
     </script>
