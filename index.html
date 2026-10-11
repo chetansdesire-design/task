@@ -495,7 +495,6 @@
         function initApp() {
             if (!currentUser) return;
 
-            // Enforce permissions: staff can only view their own tasks
             if (currentUser.role !== 'admin') {
                 activeFilters.team = currentUser.username;
                 document.getElementById('teamFilterSection').style.display = 'none';
@@ -624,7 +623,6 @@
             const globalSearch = document.getElementById('globalSearchInput').value.toLowerCase();
 
             Object.values(currentTasksCache).forEach(task => {
-                // Role-based security check: staff can ONLY view their own tasks
                 if (currentUser.role !== 'admin') {
                     if (!task.assignee || task.assignee.trim().toLowerCase() !== currentUser.username.trim().toLowerCase()) return;
                 } else {
@@ -757,8 +755,18 @@
 
             document.getElementById('dTitleInput').value = task.title;
             document.getElementById('dCategoryInput').value = task.category || 'General';
+            
             const assigneeSelect = document.getElementById('dAssigneeInput');
-            if (assigneeSelect) assigneeSelect.value = task.assignee;
+            if (assigneeSelect) {
+                assigneeSelect.value = task.assignee;
+                // Staff cannot reassign tasks; keep assignee locked to their own name
+                if (currentUser.role !== 'admin') {
+                    assigneeSelect.disabled = true;
+                } else {
+                    assigneeSelect.disabled = false;
+                }
+            }
+
             document.getElementById('dStatusInput').value = task.status;
             populateWorkingHoursSelect(task.deadline);
 
@@ -794,7 +802,10 @@
             const newTitle = document.getElementById('dTitleInput').value.trim();
             const newCategory = document.getElementById('dCategoryInput').value;
             const assigneeSelect = document.getElementById('dAssigneeInput');
-            const newAssignee = assigneeSelect ? assigneeSelect.value : task.assignee;
+            
+            // Strictly enforce assignee preservation for non-admin staff
+            const newAssignee = currentUser.role !== 'admin' ? task.assignee : (assigneeSelect ? assigneeSelect.value : task.assignee);
+            
             const newStatus = document.getElementById('dStatusInput').value;
             const newDeadline = document.getElementById('dDateInput').value;
             const noteText = document.getElementById('dNoteInput').value.trim();
