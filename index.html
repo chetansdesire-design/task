@@ -118,7 +118,7 @@
             <div class="hidden md:flex items-center flex-1 max-w-xs mx-4">
                 <div class="relative w-full">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                    <input type="text" id="globalSearchInput" oninput="filterTasksLive()" placeholder="Search works, staff..." class="w-full bg-slate-950/90 border border-slate-700/80 rounded-lg pl-8 pr-3 py-1.5 text-[11px] font-semibold text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
+                    <input type="text" id="globalSearchInput" oninput="renderTasks()" placeholder="Search works, staff..." class="w-full bg-slate-950/90 border border-slate-700/80 rounded-lg pl-8 pr-3 py-1.5 text-[11px] font-semibold text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
                 </div>
             </div>
 
@@ -155,7 +155,14 @@
         <section class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-lg">
             <form id="taskForm" onsubmit="createTask(event)" class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
                 <input type="text" id="tTitle" placeholder="⚡ Quick Work / Reminder Description..." required class="md:col-span-8 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] text-slate-100 font-bold focus:outline-none focus:border-sky-500 placeholder-emerald-300 font-semibold">
-                <select id="tUser" class="md:col-span-2 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-sky-500"></select>
+                <select id="tUser" class="md:col-span-2 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-sky-500">
+                    <option value="Alex Rivera">Alex Rivera</option>
+                    <option value="Chetan Prajapati">Chetan Prajapati</option>
+                    <option value="Vamshi">Vamshi</option>
+                    <option value="Sagar">Sagar</option>
+                    <option value="Suman">Suman</option>
+                    <option value="Shiva">Shiva</option>
+                </select>
                 <button type="submit" class="md:col-span-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-[11px] py-2 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-1.5">+ Assign Work</button>
             </form>
         </section>
@@ -311,6 +318,12 @@
 
     <!-- SCRIPT ENGINE -->
     <script>
+        // Title Case Helper (First letter of every word capitalized)
+        function toTitleCase(str) {
+            if (!str) return '';
+            return str.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1));
+        }
+
         // PWA Setup & Service Worker Registration
         const manifestData = {
             "name": "Urban Casa Command Center",
@@ -442,7 +455,7 @@
         }
 
         function handleLogin() {
-            const user = document.getElementById('userIn').value.trim();
+            const user = toTitleCase(document.getElementById('userIn').value);
             const pass = document.getElementById('passIn').value.trim();
             if (!user || !pass) { alert('Please enter username and password.'); return; }
             db.ref('users/' + user).once('value', (snapshot) => {
@@ -552,14 +565,12 @@
                     if (m.to === currentUser.username && !m.read) unread++;
                 });
                 const badge = document.getElementById('msgBadge');
-                if (unread > 0) { badge.innerText = unread; badge.classList.remove('hidden'); }
+                if (unread > 0) { badge.innerText = unread; badge.classList.add('hidden'); }
                 else { badge.classList.add('hidden'); }
             });
         }
 
         function renderTeamFilterBar() {
-            if (currentUser.role !== 'admin') return;
-
             const bar = document.getElementById('teamFilterBar');
             const select = document.getElementById('tUser');
             const drawerSelect = document.getElementById('dAssigneeInput');
@@ -570,11 +581,13 @@
                 staffNames = ['Alex Rivera', 'Chetan Prajapati', 'Vamshi', 'Sagar', 'Suman', 'Shiva'];
             }
 
-            bar.innerHTML = `<button onclick="filterTeam('ALL')" class="px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase transition ${activeFilters.team === 'ALL' ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'}">All Team</button>`;
-            staffNames.forEach(name => {
-                const isActive = activeFilters.team === name;
-                bar.innerHTML += `<button onclick="filterTeam('${name}')" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition ${isActive ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'}">${name}</button>`;
-            });
+            if (currentUser.role === 'admin') {
+                bar.innerHTML = `<button onclick="filterTeam('ALL')" class="px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase transition ${activeFilters.team === 'ALL' ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'}">All Team</button>`;
+                staffNames.forEach(name => {
+                    const isActive = activeFilters.team === name;
+                    bar.innerHTML += `<button onclick="filterTeam('${name}')" class="px-2.5 py-1 rounded-lg font-bold text-[10px] transition ${isActive ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'}">${name}</button>`;
+                });
+            }
 
             select.innerHTML = staffNames.map(n => `<option value="${n}">${n}</option>`).join('');
             if (drawerSelect) drawerSelect.innerHTML = staffNames.map(n => `<option value="${n}">${n}</option>`).join('');
@@ -596,9 +609,19 @@
 
         function createTask(e) {
             e.preventDefault();
-            const title = document.getElementById('tTitle').value.trim();
-            const assignee = document.getElementById('tUser').value;
-            if (!title || !assignee) return;
+            const rawTitle = document.getElementById('tTitle').value;
+            const title = toTitleCase(rawTitle);
+            const assigneeSelect = document.getElementById('tUser');
+            const assignee = assigneeSelect ? assigneeSelect.value : '';
+
+            if (!title) {
+                alert('Please enter a work description.');
+                return;
+            }
+            if (!assignee) {
+                alert('Please select a staff member to assign the work.');
+                return;
+            }
 
             const newRef = db.ref('tasks').push();
             const taskData = {
@@ -612,15 +635,20 @@
                 createdAt: Date.now(),
                 history: [{ user: currentUser.username, text: `Created work: "${title}"`, time: Date.now() }]
             };
-            newRef.set(taskData);
-            logActivity(`Assigned "${title}" to ${assignee}`);
-            document.getElementById('tTitle').value = '';
+
+            newRef.set(taskData).then(() => {
+                logActivity(`Assigned "${title}" to ${assignee}`);
+                document.getElementById('tTitle').value = '';
+            }).catch(err => {
+                alert('Failed to assign work: ' + err.message);
+            });
         }
 
         function renderTasks() {
             const columns = { new: [], 'in-progress': [], pending: [], completed: [] };
             const counts = { new: 0, 'in-progress': 0, pending: 0, completed: 0 };
-            const globalSearch = document.getElementById('globalSearchInput').value.toLowerCase();
+            const globalSearchInput = document.getElementById('globalSearchInput');
+            const globalSearch = globalSearchInput ? globalSearchInput.value.toLowerCase() : '';
 
             Object.values(currentTasksCache).forEach(task => {
                 if (currentUser.role !== 'admin') {
@@ -646,11 +674,15 @@
                     return (a.createdAt || 0) - (b.createdAt || 0);
                 });
 
-                document.getElementById(`cnt-${status}`).innerText = list.length;
+                const cntEl = document.getElementById(`cnt-${status}`);
+                if (cntEl) cntEl.innerText = list.length;
+                
                 const container = document.getElementById(`col-${status}`);
                 const expandContainer = document.getElementById(`expand-${status}`);
+                if (!container) return;
+                
                 container.innerHTML = '';
-                expandContainer.innerHTML = '';
+                if (expandContainer) expandContainer.innerHTML = '';
 
                 const limit = expandedColumns[status] ? list.length : Math.min(list.length, 10);
                 const visibleTasks = list.slice(0, limit);
@@ -659,9 +691,9 @@
                     container.appendChild(createTaskCard(task));
                 });
 
-                if (list.length > 10 && !expandedColumns[status]) {
+                if (list.length > 10 && !expandedColumns[status] && expandContainer) {
                     expandContainer.innerHTML = `<button onclick="toggleExpandColumn('${status}')" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show All (${list.length})</button>`;
-                } else if (expandedColumns[status] && list.length > 10) {
+                } else if (expandedColumns[status] && list.length > 10 && expandContainer) {
                     expandContainer.innerHTML = `<button onclick="toggleExpandColumn('${status}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show Less</button>`;
                 }
             });
@@ -759,7 +791,6 @@
             const assigneeSelect = document.getElementById('dAssigneeInput');
             if (assigneeSelect) {
                 assigneeSelect.value = task.assignee;
-                // Staff cannot reassign tasks; keep assignee locked to their own name
                 if (currentUser.role !== 'admin') {
                     assigneeSelect.disabled = true;
                 } else {
@@ -799,18 +830,19 @@
             const task = currentTasksCache[currentOpenTaskId];
             if (!task) return;
 
-            const newTitle = document.getElementById('dTitleInput').value.trim();
+            const rawTitle = document.getElementById('dTitleInput').value;
+            const newTitle = toTitleCase(rawTitle);
             const newCategory = document.getElementById('dCategoryInput').value;
             const assigneeSelect = document.getElementById('dAssigneeInput');
             
-            // Strictly enforce assignee preservation for non-admin staff
             const newAssignee = currentUser.role !== 'admin' ? task.assignee : (assigneeSelect ? assigneeSelect.value : task.assignee);
             
             const newStatus = document.getElementById('dStatusInput').value;
             const newDeadline = document.getElementById('dDateInput').value;
-            const noteText = document.getElementById('dNoteInput').value.trim();
+            const rawNote = document.getElementById('dNoteInput').value;
+            const noteText = toTitleCase(rawNote);
 
-            if (!noteText) {
+            if (!rawNote.trim()) {
                 alert('Please enter a mandatory update note before saving.');
                 return;
             }
@@ -1024,7 +1056,8 @@
         }
 
         function sendPrivateMessage() {
-            const text = document.getElementById('newMsgText').value.trim();
+            const rawText = document.getElementById('newMsgText').value;
+            const text = toTitleCase(rawText);
             if (!text || !activeChatPartner) return;
             const ref = db.ref('messages').push();
             const msgData = {
@@ -1058,7 +1091,7 @@
         }
 
         function addStaffMember() {
-            const name = document.getElementById('newStaffName').value.trim();
+            const name = toTitleCase(document.getElementById('newStaffName').value);
             const role = document.getElementById('newStaffRole').value;
             const pass = document.getElementById('newStaffPass').value.trim();
             if (!name || !pass) { alert('Enter staff name and password.'); return; }
