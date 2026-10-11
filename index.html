@@ -151,7 +151,7 @@
             </div>
         </header>
 
-        <!-- RAPID TASK CREATION FORM (Fluorescent placeholder text) -->
+        <!-- RAPID TASK CREATION FORM -->
         <section class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-lg">
             <form id="taskForm" onsubmit="createTask(event)" class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
                 <input type="text" id="tTitle" placeholder="⚡ Quick Work / Reminder Description..." required class="md:col-span-8 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] text-slate-100 font-bold focus:outline-none focus:border-sky-500 placeholder-emerald-300 font-semibold">
@@ -160,8 +160,8 @@
             </form>
         </section>
 
-        <!-- TEAM FILTER BAR -->
-        <div class="flex items-center justify-between bg-slate-900/60 border border-slate-800/80 rounded-xl px-3.5 py-1.5 text-[11px]">
+        <!-- TEAM FILTER BAR (Admin Only View) -->
+        <div id="teamFilterSection" class="flex items-center justify-between bg-slate-900/60 border border-slate-800/80 rounded-xl px-3.5 py-1.5 text-[11px]">
             <span class="text-slate-400 font-extrabold uppercase tracking-wider text-[9px]">Filter Staff Assignment</span>
             <div id="teamFilterBar" class="flex gap-1.5 overflow-x-auto py-0.5"></div>
         </div>
@@ -277,7 +277,7 @@
         </div>
     </div>
 
-    <!-- STAFF SETTINGS & WORKS RESET MODAL (Accessible to all team members) -->
+    <!-- STAFF SETTINGS & WORKS RESET MODAL -->
     <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 hidden" id="adminModal" onclick="toggleAdminModal(false)">
         <div class="bg-slate-900 border border-slate-800/80 rounded-2xl w-full max-w-xl p-5 shadow-2xl space-y-3.5 animate-fade-in" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
@@ -286,10 +286,9 @@
             </div>
 
             <div class="space-y-3.5">
-                <!-- System Reset Section (Available to ALL users) -->
                 <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-2">
                     <p class="text-[11px] font-extrabold text-sky-400">⚡ System Controls & Works Reset</p>
-                    <p class="text-[10px] font-semibold text-slate-400">Available to all team members to clear or reset completed works as needed.</p>
+                    <p class="text-[10px] font-semibold text-slate-400">Available to team members to clear or reset completed works as needed.</p>
                     <button onclick="resetAllWorks()" class="bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 border border-rose-500/30 text-[11px] font-bold px-3 py-2 rounded-xl w-full transition">Reset / Clear All Completed Works</button>
                 </div>
 
@@ -495,7 +494,15 @@
 
         function initApp() {
             if (!currentUser) return;
-            activeFilters.team = 'ALL';
+
+            // Enforce permissions: staff can only view their own tasks
+            if (currentUser.role !== 'admin') {
+                activeFilters.team = currentUser.username;
+                document.getElementById('teamFilterSection').style.display = 'none';
+            } else {
+                activeFilters.team = 'ALL';
+                document.getElementById('teamFilterSection').style.display = 'flex';
+            }
 
             document.getElementById('mainApp').classList.remove('hidden');
             document.getElementById('welcomeMsg').innerText = `Welcome, ${currentUser.username}`;
@@ -552,6 +559,8 @@
         }
 
         function renderTeamFilterBar() {
+            if (currentUser.role !== 'admin') return;
+
             const bar = document.getElementById('teamFilterBar');
             const select = document.getElementById('tUser');
             const drawerSelect = document.getElementById('dAssigneeInput');
@@ -580,6 +589,7 @@
         }
 
         function filterTeam(name) {
+            if (currentUser.role !== 'admin') return;
             activeFilters.team = name;
             renderTeamFilterBar();
             renderTasks();
@@ -614,8 +624,13 @@
             const globalSearch = document.getElementById('globalSearchInput').value.toLowerCase();
 
             Object.values(currentTasksCache).forEach(task => {
-                if (activeFilters.team !== 'ALL') {
-                    if (!task.assignee || task.assignee.trim().toLowerCase() !== activeFilters.team.trim().toLowerCase()) return;
+                // Role-based security check: staff can ONLY view their own tasks
+                if (currentUser.role !== 'admin') {
+                    if (!task.assignee || task.assignee.trim().toLowerCase() !== currentUser.username.trim().toLowerCase()) return;
+                } else {
+                    if (activeFilters.team !== 'ALL') {
+                        if (!task.assignee || task.assignee.trim().toLowerCase() !== activeFilters.team.trim().toLowerCase()) return;
+                    }
                 }
                 if (globalSearch && !task.title.toLowerCase().includes(globalSearch) && !task.assignee.toLowerCase().includes(globalSearch) && !(task.category && task.category.toLowerCase().includes(globalSearch))) return;
 
@@ -839,7 +854,7 @@
             }
         }
 
-        // PDF EXPORT CLEAN CHECKLIST BY CATEGORY AND USER
+        // PDF EXPORT CHECKLIST (Restricted for staff to own tasks only)
         function exportMinimalPDF() {
             const element = document.createElement('div');
             element.style.padding = '20px';
@@ -856,7 +871,13 @@
 
             const categories = ['General', 'Modular', 'Showroom', 'Factory', 'Dispatch'];
             categories.forEach(cat => {
-                let catTasks = Object.values(currentTasksCache).filter(t => (t.category || 'General') === cat);
+                let catTasks = Object.values(currentTasksCache).filter(t => {
+                    let matchCat = (t.category || 'General') === cat;
+                    if (currentUser.role !== 'admin') {
+                        return matchCat && t.assignee && t.assignee.trim().toLowerCase() === currentUser.username.trim().toLowerCase();
+                    }
+                    return matchCat;
+                });
                 if (catTasks.length === 0) return;
 
                 html += `<div style="margin-bottom: 16px;">`;
