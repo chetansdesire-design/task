@@ -151,10 +151,10 @@
             </div>
         </header>
 
-        <!-- RAPID TASK CREATION FORM -->
+        <!-- RAPID TASK CREATION FORM (Fluorescent placeholder text) -->
         <section class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-lg">
             <form id="taskForm" onsubmit="createTask(event)" class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
-                <input type="text" id="tTitle" placeholder="⚡ Quick Work / Reminder Description..." required class="md:col-span-8 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] text-slate-100 font-bold focus:outline-none focus:border-sky-500 placeholder-slate-500">
+                <input type="text" id="tTitle" placeholder="⚡ Quick Work / Reminder Description..." required class="md:col-span-8 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] text-slate-100 font-bold focus:outline-none focus:border-sky-500 placeholder-emerald-300 font-semibold">
                 <select id="tUser" class="md:col-span-2 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-sky-500"></select>
                 <button type="submit" class="md:col-span-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-[11px] py-2 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-1.5">+ Assign Work</button>
             </form>
@@ -277,7 +277,7 @@
         </div>
     </div>
 
-    <!-- STAFF SETTINGS MODAL -->
+    <!-- STAFF SETTINGS & WORKS RESET MODAL (Accessible to all team members) -->
     <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 hidden" id="adminModal" onclick="toggleAdminModal(false)">
         <div class="bg-slate-900 border border-slate-800/80 rounded-2xl w-full max-w-xl p-5 shadow-2xl space-y-3.5 animate-fade-in" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
@@ -286,9 +286,10 @@
             </div>
 
             <div class="space-y-3.5">
+                <!-- System Reset Section (Available to ALL users) -->
                 <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-2">
-                    <p class="text-[11px] font-extrabold text-sky-400">System Controls & Works Reset</p>
-                    <p class="text-[10px] font-semibold text-slate-400">Allowed for all team members to clear or reset completed works as needed.</p>
+                    <p class="text-[11px] font-extrabold text-sky-400">⚡ System Controls & Works Reset</p>
+                    <p class="text-[10px] font-semibold text-slate-400">Available to all team members to clear or reset completed works as needed.</p>
                     <button onclick="resetAllWorks()" class="bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 border border-rose-500/30 text-[11px] font-bold px-3 py-2 rounded-xl w-full transition">Reset / Clear All Completed Works</button>
                 </div>
 
@@ -505,6 +506,20 @@
 
             checkNotificationForce();
 
+            db.ref('users').once('value', snap => {
+                if (!snap.exists() || Object.keys(snap.val() || {}).length === 0) {
+                    const defaultUsers = {
+                        "Alex Rivera": { pass: "admin123", role: "admin" },
+                        "Chetan Prajapati": { pass: "admin123", role: "admin" },
+                        "Vamshi": { pass: "staff123", role: "staff" },
+                        "Sagar": { pass: "staff123", role: "staff" },
+                        "Suman": { pass: "staff123", role: "staff" },
+                        "Shiva": { pass: "staff123", role: "staff" }
+                    };
+                    db.ref('users').set(defaultUsers);
+                }
+            });
+
             db.ref('users').on('value', snap => {
                 allUsers = snap.val() || {};
                 renderTeamFilterBar();
@@ -544,7 +559,7 @@
 
             let staffNames = Object.keys(allUsers);
             if (staffNames.length === 0) {
-                staffNames = ['Alex Rivera', 'Chetan Prajapati'];
+                staffNames = ['Alex Rivera', 'Chetan Prajapati', 'Vamshi', 'Sagar', 'Suman', 'Shiva'];
             }
 
             bar.innerHTML = `<button onclick="filterTeam('ALL')" class="px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase transition ${activeFilters.team === 'ALL' ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'}">All Team</button>`;
@@ -574,14 +589,14 @@
             e.preventDefault();
             const title = document.getElementById('tTitle').value.trim();
             const assignee = document.getElementById('tUser').value;
-            if (!title) return;
+            if (!title || !assignee) return;
 
             const newRef = db.ref('tasks').push();
             const taskData = {
                 id: newRef.key,
                 title: title,
                 category: 'General',
-                assignee: assignee,
+                assignee: assignee.trim(),
                 creator: currentUser.username,
                 status: 'new',
                 deadline: getNowISO(),
@@ -599,7 +614,9 @@
             const globalSearch = document.getElementById('globalSearchInput').value.toLowerCase();
 
             Object.values(currentTasksCache).forEach(task => {
-                if (activeFilters.team !== 'ALL' && task.assignee !== activeFilters.team) return;
+                if (activeFilters.team !== 'ALL') {
+                    if (!task.assignee || task.assignee.trim().toLowerCase() !== activeFilters.team.trim().toLowerCase()) return;
+                }
                 if (globalSearch && !task.title.toLowerCase().includes(globalSearch) && !task.assignee.toLowerCase().includes(globalSearch) && !(task.category && task.category.toLowerCase().includes(globalSearch))) return;
 
                 counts[task.status]++;
