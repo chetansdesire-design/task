@@ -151,6 +151,15 @@
             </div>
         </header>
 
+        <!-- STAFF REMINDER ALERT BANNER -->
+        <div id="reminderBanner" class="hidden bg-amber-500/15 border border-amber-500/30 text-amber-300 px-3.5 py-2 rounded-xl text-[11px] font-bold flex items-center justify-between shadow-md">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400 animate-pulse"></i>
+                <span id="reminderText">Reminder: You have pending or overdue works requiring your attention.</span>
+            </div>
+            <button onclick="document.getElementById('reminderBanner').classList.add('hidden')" class="text-amber-300 hover:text-white px-1.5">✕</button>
+        </div>
+
         <!-- RAPID TASK CREATION FORM -->
         <section class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-2.5 md:p-3 shadow-lg">
             <form id="taskForm" onsubmit="createTask(event)" class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
@@ -577,6 +586,7 @@
             db.ref('tasks').on('value', snap => {
                 currentTasksCache = snap.val() || {};
                 renderTasks();
+                checkStaffReminders();
             });
 
             db.ref('archive').on('value', snap => {
@@ -597,6 +607,32 @@
                 if (unread > 0) { badge.innerText = unread; badge.classList.remove('hidden'); }
                 else { badge.classList.add('hidden'); }
             });
+        }
+
+        // Staff Reminder System Check
+        function checkStaffReminders() {
+            let pendingCount = 0;
+            let overdueCount = 0;
+            Object.values(currentTasksCache).forEach(t => {
+                if (t.assignee && t.assignee.trim().toLowerCase() === currentUser.username.trim().toLowerCase() && t.status !== 'completed') {
+                    pendingCount++;
+                    if (t.deadline && new Date(t.deadline) < new Date()) {
+                        overdueCount++;
+                    }
+                }
+            });
+
+            const banner = document.getElementById('reminderBanner');
+            const reminderText = document.getElementById('reminderText');
+            if (pendingCount > 0) {
+                reminderText.innerText = `Reminder: You have ${pendingCount} active work(s) assigned (${overdueCount} overdue). Please check and complete them on time!`;
+                banner.classList.remove('hidden');
+                if (overdueCount > 0 && window.Notification && Notification.permission === 'granted') {
+                    new Notification("URBAN CASA Reminder", { body: `You have ${overdueCount} overdue works pending!` });
+                }
+            } else {
+                banner.classList.add('hidden');
+            }
         }
 
         function renderTeamFilterBar() {
@@ -711,7 +747,7 @@
                 if (mobBadge) mobBadge.innerText = counts[s];
             });
 
-            // Render Desktop Columns
+            // Render Desktop Columns with Newest First + Date/Time Priority Sorting
             Object.keys(columns).forEach(status => {
                 const list = columns[status];
                 list.sort((a, b) => {
@@ -719,7 +755,11 @@
                     const bOverdue = b.deadline && new Date(b.deadline) < new Date() && b.status !== 'completed';
                     if (aOverdue && !bOverdue) return -1;
                     if (!aOverdue && bOverdue) return 1;
-                    return (a.createdAt || 0) - (b.createdAt || 0);
+                    // Newly added items listed first (descending createdAt), then by deadline date/time
+                    if ((b.createdAt || 0) !== (a.createdAt || 0)) {
+                        return (b.createdAt || 0) - (a.createdAt || 0);
+                    }
+                    return new Date(a.deadline || 0) - new Date(b.deadline || 0);
                 });
 
                 const cntDesk = document.getElementById(`cnt-${status}-desk`);
@@ -781,7 +821,6 @@
         function createTaskCard(task) {
             const card = document.createElement('div');
             const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'completed';
-            // High contrast card background and border to prevent blending / dark mixing
             card.className = `bg-slate-900/95 border border-slate-700/80 hover:border-sky-500 rounded-xl p-3.5 flex flex-col gap-2.5 shadow-md cursor-pointer transition relative group ${isOverdue ? 'is-overdue' : ''}`;
             card.setAttribute('draggable', 'true');
             card.id = `card-${task.id}`;
@@ -958,10 +997,16 @@
 
         function deleteTaskPermanently(taskId) {
             if (confirm('Are you sure you want to delete this work permanently?')) {
-                db.ref('tasks/' + taskId).remove();
-                db.ref('archive/' + taskId).remove();
-                document.getElementById('taskDrawer').style.display = 'none';
-                logActivity(`Deleted work permanently`);
+                db.ref('tasks/' + taskId).remove().then(() => {
+                    db.ref('archive/' + taskId).remove();
+                    delete currentTasksCache[taskId];
+                    delete archivedTasksCache[taskId];
+                    document.getElementById('taskDrawer').style.display = 'none';
+                    renderTasks();
+                    logActivity(`Deleted work permanently`);
+                }).catch(err => {
+                    alert('Error deleting work: ' + err.message);
+                });
             }
         }
 
