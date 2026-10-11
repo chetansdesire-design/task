@@ -99,18 +99,18 @@
     </div>
 
     <!-- MAIN APP CONTAINER -->
-    <div class="flex-1 flex flex-col max-w-[1700px] w-full mx-auto p-3 md:p-5 space-y-4 hidden" id="mainApp">
+    <div class="flex-1 flex flex-col max-w-[1700px] w-full mx-auto p-2.5 md:p-5 space-y-3.5 hidden" id="mainApp">
         <!-- TOP NAVIGATION HEADER -->
-        <header class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 sticky top-0 z-30 px-3.5 py-2 rounded-xl flex items-center justify-between shadow-xl">
-            <div class="flex items-center space-x-2.5">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-sky-500 flex items-center justify-center font-black text-slate-950 text-base shadow">
+        <header class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 sticky top-0 z-30 px-3 py-2 rounded-xl flex items-center justify-between shadow-xl">
+            <div class="flex items-center space-x-2">
+                <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-sky-500 flex items-center justify-center font-black text-slate-950 text-sm shadow">
                     UC
                 </div>
                 <div>
-                    <h1 class="text-xs font-extrabold tracking-tight text-white flex items-center gap-1.5">
-                        URBAN CASA <span class="text-[9px] bg-sky-950/80 text-sky-400 border border-sky-800/60 px-1.5 py-0.5 rounded font-mono font-bold uppercase">Command Center</span>
+                    <h1 class="text-xs font-extrabold tracking-tight text-white flex items-center gap-1">
+                        URBAN CASA <span class="hidden sm:inline text-[9px] bg-sky-950/80 text-sky-400 border border-sky-800/60 px-1 py-0.5 rounded font-mono font-bold uppercase">Command Center</span>
                     </h1>
-                    <p id="welcomeMsg" class="text-[10px] font-bold text-slate-400 mt-0.5">Welcome</p>
+                    <p id="welcomeMsg" class="text-[9px] font-bold text-slate-400">Welcome</p>
                 </div>
             </div>
 
@@ -123,8 +123,8 @@
             </div>
 
             <!-- Header Actions -->
-            <div class="flex items-center space-x-1.5">
-                <button onclick="exportMinimalPDF()" class="bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1 transition" title="Export clean checklist PDF">
+            <div class="flex items-center space-x-1">
+                <button onclick="exportMinimalPDF()" class="bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2 py-1.5 rounded-lg flex items-center space-x-1 transition" title="Export checklist PDF">
                     <i class="fa-solid fa-file-pdf text-emerald-400 text-xs"></i>
                     <span class="hidden sm:inline">PDF</span>
                 </button>
@@ -140,29 +140,22 @@
                     <i class="fa-solid fa-comments text-xs"></i>
                     <span id="msgBadge" class="hidden absolute -top-0.5 -right-0.5 bg-amber-500 text-slate-950 font-extrabold text-[8px] px-1 rounded-full">0</span>
                 </button>
-                <button onclick="requestPushNotificationPermission()" title="Enable Notifications" class="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/80 rounded-lg transition">
+                <button onclick="requestPushNotificationPermission()" title="Enable Notifications" class="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/80 rounded-lg transition hidden sm:block">
                     <i class="fa-solid fa-bell text-xs"></i>
                 </button>
                 <button onclick="toggleAdminModal(true)" title="Settings & Staff Roster" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 rounded-lg transition">
                     <i class="fa-solid fa-gear text-xs"></i>
                 </button>
                 <div class="h-4 w-px bg-slate-800 mx-0.5"></div>
-                <button onclick="logout()" class="text-rose-400 hover:text-rose-300 font-bold text-[10px] px-2 py-1 transition">Logout</button>
+                <button onclick="logout()" class="text-rose-400 hover:text-rose-300 font-bold text-[10px] px-1.5 py-1 transition">Logout</button>
             </div>
         </header>
 
         <!-- RAPID TASK CREATION FORM -->
-        <section class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 shadow-lg">
-            <form id="taskForm" onsubmit="createTask(event)" class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
-                <input type="text" id="tTitle" placeholder="⚡ Quick Work / Reminder Description..." required class="md:col-span-8 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] text-slate-100 font-bold focus:outline-none focus:border-sky-500 placeholder-emerald-300 font-semibold">
-                <select id="tUser" class="md:col-span-2 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-sky-500">
-                    <option value="Alex Rivera">Alex Rivera</option>
-                    <option value="Chetan Prajapati">Chetan Prajapati</option>
-                    <option value="Vamshi">Vamshi</option>
-                    <option value="Sagar">Sagar</option>
-                    <option value="Suman">Suman</option>
-                    <option value="Shiva">Shiva</option>
-                </select>
+        <section class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-2.5 md:p-3 shadow-lg">
+            <form id="taskForm" onsubmit="createTask(event)" class="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                <input type="text" id="tTitle" placeholder="⚡ Quick Work / Reminder Description..." required class="md:col-span-8 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-[11px] text-slate-100 font-bold focus:outline-none focus:border-sky-500 placeholder-emerald-300">
+                <select id="tUser" class="md:col-span-2 bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-sky-500"></select>
                 <button type="submit" class="md:col-span-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-[11px] py-2 px-3 rounded-xl shadow-md transition flex items-center justify-center gap-1.5">+ Assign Work</button>
             </form>
         </section>
@@ -173,36 +166,53 @@
             <div id="teamFilterBar" class="flex gap-1.5 overflow-x-auto py-0.5"></div>
         </div>
 
-        <!-- KANBAN BOARD WITH DRAG AND DROP -->
-        <div class="kanban-board grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5" id="kanbanBoard">
+        <!-- MOBILE TAB SWITCHER (Visible on Mobile Only) -->
+        <div class="flex md:hidden bg-slate-900/90 border border-slate-800/80 rounded-xl p-1 gap-1 shadow-md">
+            <button onclick="setMobileTab('new')" id="mobTab-new" class="flex-1 py-2 text-[10px] font-extrabold rounded-lg uppercase tracking-wider text-center transition bg-sky-600 text-white shadow">New (<span id="mob-cnt-new">0</span>)</button>
+            <button onclick="setMobileTab('in-progress')" id="mobTab-in-progress" class="flex-1 py-2 text-[10px] font-extrabold rounded-lg uppercase tracking-wider text-center transition text-slate-400">In Prog (<span id="mob-cnt-in-progress">0</span>)</button>
+            <button onclick="setMobileTab('pending')" id="mobTab-pending" class="flex-1 py-2 text-[10px] font-extrabold rounded-lg uppercase tracking-wider text-center transition text-slate-400">Pending (<span id="mob-cnt-pending">0</span>)</button>
+            <button onclick="setMobileTab('completed')" id="mobTab-completed" class="flex-1 py-2 text-[10px] font-extrabold rounded-lg uppercase tracking-wider text-center transition text-slate-400">Done (<span id="mob-cnt-completed">0</span>)</button>
+        </div>
+
+        <!-- KANBAN BOARD: DESKTOP GRID (Hidden on Mobile) -->
+        <div class="hidden md:grid grid-cols-2 xl:grid-cols-4 gap-3.5" id="kanbanBoardDesktop">
             <div class="bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 min-h-[55vh] transition" data-status="new" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'new')">
                 <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-sky-400 pb-2 border-b border-slate-800/80">
-                    <span>New</span> <span id="cnt-new" class="bg-slate-800 text-sky-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
+                    <span>New</span> <span id="cnt-new-desk" class="bg-slate-800 text-sky-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
                 </div>
-                <div class="kanban-cards flex flex-col gap-2 flex-1" id="col-new"></div>
-                <div id="expand-new"></div>
+                <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-new-desk"></div>
+                <div id="expand-new-desk"></div>
             </div>
             <div class="bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 min-h-[55vh] transition" data-status="in-progress" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'in-progress')">
                 <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-amber-400 pb-2 border-b border-slate-800/80">
-                    <span>In Progress</span> <span id="cnt-in-progress" class="bg-slate-800 text-amber-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
+                    <span>In Progress</span> <span id="cnt-in-progress-desk" class="bg-slate-800 text-amber-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
                 </div>
-                <div class="kanban-cards flex flex-col gap-2 flex-1" id="col-in-progress"></div>
-                <div id="expand-in-progress"></div>
+                <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-in-progress-desk"></div>
+                <div id="expand-in-progress-desk"></div>
             </div>
             <div class="bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 min-h-[55vh] transition" data-status="pending" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'pending')">
                 <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-indigo-400 pb-2 border-b border-slate-800/80">
-                    <span>Pending</span> <span id="cnt-pending" class="bg-slate-800 text-indigo-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
+                    <span>Pending</span> <span id="cnt-pending-desk" class="bg-slate-800 text-indigo-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
                 </div>
-                <div class="kanban-cards flex flex-col gap-2 flex-1" id="col-pending"></div>
-                <div id="expand-pending"></div>
+                <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-pending-desk"></div>
+                <div id="expand-pending-desk"></div>
             </div>
             <div class="bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5 min-h-[55vh] transition" data-status="completed" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'completed')">
                 <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-emerald-400 pb-2 border-b border-slate-800/80">
-                    <span>Completed</span> <span id="cnt-completed" class="bg-slate-800 text-emerald-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
+                    <span>Completed</span> <span id="cnt-completed-desk" class="bg-slate-800 text-emerald-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
                 </div>
-                <div class="kanban-cards flex flex-col gap-2 flex-1" id="col-completed"></div>
-                <div id="expand-completed"></div>
+                <div class="kanban-cards flex flex-col gap-2.5 flex-1" id="col-completed-desk"></div>
+                <div id="expand-completed-desk"></div>
             </div>
+        </div>
+
+        <!-- KANBAN BOARD: MOBILE TABBED VIEW (Visible on Mobile Only) -->
+        <div class="flex md:hidden flex-col bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 min-h-[60vh] gap-3" id="kanbanBoardMobile">
+            <div class="flex justify-between items-center font-extrabold text-[10px] uppercase tracking-wider text-sky-400 pb-2 border-b border-slate-800/80">
+                <span id="mobileActiveTitle">New Works</span> <span id="cnt-mob-active" class="bg-slate-800 text-sky-300 px-2 py-0.5 rounded-full text-[9px] font-bold">0</span>
+            </div>
+            <div class="kanban-cards flex flex-col gap-3 flex-1" id="col-mobile-active"></div>
+            <div id="expand-mobile-active"></div>
         </div>
     </div>
 
@@ -400,7 +410,26 @@
         let archivedTasksCache = {};
         let currentOpenTaskId = null;
         let activeChatPartner = '';
-        let expandedColumns = { new: false, 'in-progress': false, pending: false, completed: false };
+        let activeMobileTab = 'new';
+        let expandedColumns = { desk_new: false, desk_in_progress: false, desk_pending: false, desk_completed: false, mob_active: false };
+
+        function setMobileTab(status) {
+            activeMobileTab = status;
+            ['new', 'in-progress', 'pending', 'completed'].forEach(s => {
+                const btn = document.getElementById(`mobTab-${s}`);
+                if (btn) {
+                    if (s === status) {
+                        btn.className = 'flex-1 py-2 text-[10px] font-extrabold rounded-lg uppercase tracking-wider text-center transition bg-sky-600 text-white shadow';
+                    } else {
+                        btn.className = 'flex-1 py-2 text-[10px] font-extrabold rounded-lg uppercase tracking-wider text-center transition text-slate-400 hover:text-slate-200';
+                    }
+                }
+            });
+            const titles = { new: 'New Works', 'in-progress': 'In Progress Works', pending: 'Pending Works', completed: 'Completed Works' };
+            const titleEl = document.getElementById('mobileActiveTitle');
+            if (titleEl) titleEl.innerText = titles[status] || 'Works';
+            renderTasks();
+        }
 
         function getNowISO() {
             const now = new Date();
@@ -581,13 +610,12 @@
                 staffNames = ['Alex Rivera', 'Chetan Prajapati', 'Vamshi', 'Sagar', 'Suman', 'Shiva'];
             }
 
-            // For non-admin users, place the logged-in user's name first in the dropdown list
             if (currentUser.role !== 'admin') {
                 staffNames = staffNames.filter(n => n !== currentUser.username);
                 staffNames.unshift(currentUser.username);
             }
 
-            if (currentUser.role === 'admin') {
+            if (currentUser.role === 'admin' && bar) {
                 bar.innerHTML = `<button onclick="filterTeam('ALL')" class="px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase transition ${activeFilters.team === 'ALL' ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'}">All Team</button>`;
                 staffNames.forEach(name => {
                     const isActive = activeFilters.team === name;
@@ -595,8 +623,10 @@
                 });
             }
 
-            select.innerHTML = staffNames.map(n => `<option value="${n}">${n}</option>`).join('');
-            select.disabled = false;
+            if (select) {
+                select.innerHTML = staffNames.map(n => `<option value="${n}">${n}</option>`).join('');
+                select.disabled = false;
+            }
             if (drawerSelect) {
                 drawerSelect.innerHTML = staffNames.map(n => `<option value="${n}">${n}</option>`).join('');
                 drawerSelect.disabled = false;
@@ -675,6 +705,13 @@
                 columns[task.status].push(task);
             });
 
+            // Update mobile badge counts
+            ['new', 'in-progress', 'pending', 'completed'].forEach(s => {
+                const mobBadge = document.getElementById(`mob-cnt-${s}`);
+                if (mobBadge) mobBadge.innerText = counts[s];
+            });
+
+            // Render Desktop Columns
             Object.keys(columns).forEach(status => {
                 const list = columns[status];
                 list.sort((a, b) => {
@@ -685,40 +722,67 @@
                     return (a.createdAt || 0) - (b.createdAt || 0);
                 });
 
-                const cntEl = document.getElementById(`cnt-${status}`);
-                if (cntEl) cntEl.innerText = list.length;
+                const cntDesk = document.getElementById(`cnt-${status}-desk`);
+                if (cntDesk) cntDesk.innerText = list.length;
                 
-                const container = document.getElementById(`col-${status}`);
-                const expandContainer = document.getElementById(`expand-${status}`);
-                if (!container) return;
-                
-                container.innerHTML = '';
-                if (expandContainer) expandContainer.innerHTML = '';
+                const containerDesk = document.getElementById(`col-${status}-desk`);
+                const expandDesk = document.getElementById(`expand-${status}-desk`);
+                if (containerDesk) {
+                    containerDesk.innerHTML = '';
+                    if (expandDesk) expandDesk.innerHTML = '';
 
-                const limit = expandedColumns[status] ? list.length : Math.min(list.length, 10);
-                const visibleTasks = list.slice(0, limit);
+                    const limitDesk = expandedColumns[`desk_${status}`] ? list.length : Math.min(list.length, 10);
+                    list.slice(0, limitDesk).forEach(task => {
+                        containerDesk.appendChild(createTaskCard(task));
+                    });
 
-                visibleTasks.forEach(task => {
-                    container.appendChild(createTaskCard(task));
-                });
-
-                if (list.length > 10 && !expandedColumns[status] && expandContainer) {
-                    expandContainer.innerHTML = `<button onclick="toggleExpandColumn('${status}')" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show All (${list.length})</button>`;
-                } else if (expandedColumns[status] && list.length > 10 && expandContainer) {
-                    expandContainer.innerHTML = `<button onclick="toggleExpandColumn('${status}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show Less</button>`;
+                    if (list.length > 10 && !expandedColumns[`desk_${status}`] && expandDesk) {
+                        expandDesk.innerHTML = `<button onclick="toggleExpandDesk('${status}')" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show All (${list.length})</button>`;
+                    } else if (expandedColumns[`desk_${status}`] && list.length > 10 && expandDesk) {
+                        expandDesk.innerHTML = `<button onclick="toggleExpandDesk('${status}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show Less</button>`;
+                    }
                 }
             });
+
+            // Render Mobile Active Tab Column
+            const activeList = columns[activeMobileTab] || [];
+            const cntMobActive = document.getElementById('cnt-mob-active');
+            if (cntMobActive) cntMobActive.innerText = activeList.length;
+
+            const containerMob = document.getElementById('col-mobile-active');
+            const expandMob = document.getElementById('expand-mobile-active');
+            if (containerMob) {
+                containerMob.innerHTML = '';
+                if (expandMob) expandMob.innerHTML = '';
+
+                const limitMob = expandedColumns.mob_active ? activeList.length : Math.min(activeList.length, 10);
+                activeList.slice(0, limitMob).forEach(task => {
+                    containerMob.appendChild(createTaskCard(task));
+                });
+
+                if (activeList.length > 10 && !expandedColumns.mob_active && expandMob) {
+                    expandMob.innerHTML = `<button onclick="toggleExpandMob()" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show All (${activeList.length})</button>`;
+                } else if (expandedColumns.mob_active && activeList.length > 10 && expandMob) {
+                    expandMob.innerHTML = `<button onclick="toggleExpandMob()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-[11px] py-1.5 rounded-lg transition mt-1.5">Show Less</button>`;
+                }
+            }
         }
 
-        function toggleExpandColumn(status) {
-            expandedColumns[status] = !expandedColumns[status];
+        function toggleExpandDesk(status) {
+            expandedColumns[`desk_${status}`] = !expandedColumns[`desk_${status}`];
+            renderTasks();
+        }
+
+        function toggleExpandMob() {
+            expandedColumns.mob_active = !expandedColumns.mob_active;
             renderTasks();
         }
 
         function createTaskCard(task) {
             const card = document.createElement('div');
             const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'completed';
-            card.className = `bg-slate-950/90 border border-slate-800 hover:border-sky-500/60 rounded-xl p-3 flex flex-col gap-2 shadow-sm cursor-pointer transition relative group ${isOverdue ? 'is-overdue' : ''}`;
+            // High contrast card background and border to prevent blending / dark mixing
+            card.className = `bg-slate-900/95 border border-slate-700/80 hover:border-sky-500 rounded-xl p-3.5 flex flex-col gap-2.5 shadow-md cursor-pointer transition relative group ${isOverdue ? 'is-overdue' : ''}`;
             card.setAttribute('draggable', 'true');
             card.id = `card-${task.id}`;
 
@@ -732,18 +796,18 @@
 
             card.onclick = () => openTaskDrawer(task.id);
 
-            const categoryBadge = task.category ? `<span class="bg-slate-900 text-sky-300 border border-slate-800/80 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold">${task.category}</span>` : '';
+            const categoryBadge = task.category ? `<span class="bg-slate-950 text-sky-300 border border-slate-700 px-2 py-0.5 rounded text-[9px] font-mono font-bold">${task.category}</span>` : '';
             const deadlineText = task.deadline ? formatHourDisplay(task.deadline) : '';
-            const deadlineBadge = deadlineText ? `<span class="text-[10px] font-semibold ${isOverdue ? 'text-rose-400 font-extrabold animate-pulse' : 'text-slate-400'}"><i class="fa-regular fa-clock mr-0.5 text-[9px]"></i>${deadlineText}</span>` : '';
+            const deadlineBadge = deadlineText ? `<span class="text-[10px] font-semibold ${isOverdue ? 'text-rose-400 font-extrabold animate-pulse' : 'text-slate-300'}"><i class="fa-regular fa-clock mr-1 text-[9px]"></i>${deadlineText}</span>` : '';
 
             card.innerHTML = `
                 <div class="flex justify-between items-start gap-2">
-                    <h4 class="text-[11px] font-bold text-slate-100 leading-snug flex-1">${task.title}</h4>
+                    <h4 class="text-[11px] font-bold text-white leading-snug flex-1">${task.title}</h4>
                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
                         <button onclick="event.stopPropagation(); archiveTask('${task.id}')" title="Archive Work" class="text-slate-400 hover:text-rose-400 p-1"><i class="fa-solid fa-box-archive text-[10px]"></i></button>
                     </div>
                 </div>
-                <div class="flex justify-between items-center text-[10px] pt-1 border-t border-slate-900 mt-0.5">
+                <div class="flex justify-between items-center text-[10px] pt-1.5 border-t border-slate-800 mt-0.5">
                     <span class="text-sky-400 font-extrabold flex items-center gap-1"><i class="fa-solid fa-user-tag text-[9px]"></i>${task.assignee}</span>
                     <div class="flex items-center gap-1.5">
                         ${categoryBadge}
@@ -913,7 +977,7 @@
             }
         }
 
-        // PDF EXPORT CHECKLIST (Restricted for staff to own tasks only)
+        // PDF EXPORT CHECKLIST
         function exportMinimalPDF() {
             const element = document.createElement('div');
             element.style.padding = '20px';
